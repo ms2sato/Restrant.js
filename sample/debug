@@ -1,0 +1,4 @@
+#!/bin/sh
+
+node-dev app.js
+

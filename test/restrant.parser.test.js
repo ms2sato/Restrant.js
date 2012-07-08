@@ -1,0 +1,143 @@
+var should = require("should");
+var restrant = require('../index.js');
+
+describe('PathParser', function () {
+    describe('.parse', function () {
+        it('should parse match string', function () {
+
+            var p = new restrant.Router.PathParser('/test/test1');
+            p.parse('/test/test1').should.equal(true);
+
+        });
+
+        it('should not parse match string', function () {
+
+            var p = new restrant.Router.PathParser('/test/test1');
+            p.parse('/test/test2').should.equal(false);
+
+        });
+
+        it('should parse string and placeholder', function () {
+
+            var p = new restrant.Router.PathParser('/test/:ph1');
+            p.parse('/test/test2').should.equal(true);
+            p.placeholders.ph1.should.equal('test2');
+        });
+
+
+        it('should parse query all match', function () {
+
+
+            var query = {
+                test1:'test1',
+                test2:123
+            };
+
+
+            var p = new restrant.Router.ParamParser('test1=test1&test2=123');
+            p.parse(query).should.equal(true);
+
+        });
+    })
+})
+
+
+describe('ParamParser', function () {
+
+    describe('.parse', function () {
+
+        it('should parse query all match', function () {
+
+            var query = {
+                test1:'test1',
+                test2:123
+            };
+
+            var p = new restrant.Router.ParamParser('test1=test1&test2=123');
+            p.parse(query).should.equal(true);
+
+        });
+
+        it('should parse query and placeholder', function () {
+
+            var query = {
+                test1:'test1',
+                test2:'123',
+                test3:'iroha'
+            };
+
+            var p = new restrant.Router.ParamParser('test1=test1&test2=:param1&test3=:param2');
+            p.parse(query).should.equal(true);
+
+            console.dir(p.placeholders);
+            p.placeholders.param1.should.equal('123');
+            p.placeholders.param2.should.equal('iroha');
+
+
+        });
+
+        it('should parse query and placeholder with type', function () {
+
+            var query = {
+                test1:'test1',
+                test2:'123',
+                test3:'3.14'
+            };
+
+            var p = new restrant.Router.ParamParser('test1=test1&test2=:param1:Integer&test3=:param2:Float');
+            p.parse(query).should.equal(true);
+
+            console.dir(p.placeholders);
+            p.placeholders.param1.should.equal(123);
+            p.placeholders.param2.should.equal(3.14);
+
+
+        });
+
+        it('should parse query and placeholder with type not match', function () {
+
+            var query = {
+                test1:'test1',
+                test2:'123',
+                test3:'aaaa'
+            };
+
+            var p = new restrant.Router.ParamParser('test1=test1&test2=:param1:Integer&test3=:param2:Float');
+            p.parse(query).should.equal(false);
+
+        });
+
+
+    })
+})
+
+
+describe('Router', function () {
+
+    describe('.path', function () {
+
+        it('should dispatch ', function () {
+
+            var router = new restrant.Router();
+            router.onNotFound = function(){
+                fail('should not reach');
+            };
+
+            router.path('/test1/:action?aaa=:param1&bbb=:param2', function(req, res){
+
+            });
+
+            router.execute({
+                url: '/test1/test2',
+                query: {
+                    aaa: '123',
+                    bbb:'456'
+                }
+            });
+        });
+
+
+
+
+    })
+})
