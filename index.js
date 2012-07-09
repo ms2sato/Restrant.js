@@ -6,7 +6,7 @@ var Router = function () {
 
 
 Router.PathParser = function (template, options) {
-    if(template === undefined || template === null){
+    if (template === undefined || template === null) {
         throw new Error('template is not found');
     }
 
@@ -62,7 +62,7 @@ Router.PathParser.prototype = {
 
 Router.ParamParser = function (template, options) {
 
-    if(template === undefined || template === null){
+    if (template === undefined || template === null) {
         throw new Error('template is not found');
     }
 
@@ -147,53 +147,39 @@ Router.ParamParser.prototype = {
 
 };
 
+Router.BasicHandler = function (options) {
+    //console.dir(options);
+    this.options = options;
+}
 
-Router.prototype = {
+Router.BasicHandler.prototype = {
 
-
-    /**
-     *
-     * @param options{
-     *     condition: function(req, res, fullurl){
-     *
-     *     },
-     *     process: function(){
-     *
-     *     }
-     * }
-     */
-    push:function (options) {
-        this.router.push(options);
-        return this;
-    },
-
-    fullpath:function (url, process, options) {
+    findProcess:function (req, res) {
         var self = this;
-        options = options || {};
 
-        return this.push({
-            condition:function (req, res) {
-                if (options.host) {
-                    if (options.host != req.host) return false;
-                }
-                var fullurl = this.getFullUrl(req, res);
-                return fullurl == url;
-            },
+        //console.dir(this.options);
 
-            process:function (req, res) {
-                process.call(self, req, res);
+        if (this.options.condition(req, res)) {
+            return function () {
+                return self.options.process(req, res);
             }
-        });
-    },
-
-    path:function (path, process, options) {
-        var self = this;
-
-        if(!path){
-            throw new Error('path == null');
         }
+        return false;
+    }
+}
 
-        options = options || {};
+Router.PathHandler = function (path, process, options) {
+    this.options = options || {};
+    this.path = path;
+    this.process = process;
+}
+
+Router.PathHandler.prototype = {
+
+    findProcess:function (req, res) {
+
+        var path = this.path;
+        var options = this.options;
 
         var match;
         var placeholders = {};
@@ -229,34 +215,86 @@ Router.prototype = {
 
                 return true;
             }
+        };
+
+        if (options.host) {
+            if (options.host != req.host) return false;
         }
 
+        var process = this.process;
+        var self = this;
+        self.params = placeholders;
+        if(match(req, res)){
+            return function () {
+                return process.call(self, req, res);
+            }
+        }
+
+    }
+}
+
+
+Router.prototype = {
+
+
+    /**
+     *
+     * @param options{
+     *     condition: function(req, res, fullurl){
+     *
+     *     },
+     *     process: function(){
+     *
+     *     }
+     * }
+     */
+    push:function (options) {
+        this.router.push(new Router.BasicHandler(options));
+        return this;
+    },
+
+    fullpath:function (url, process, options) {
+        var self = this;
+        options = options || {};
 
         return this.push({
-
             condition:function (req, res) {
                 if (options.host) {
                     if (options.host != req.host) return false;
                 }
-
-                return match(req, res);
+                var fullurl = this.getFullUrl(req, res);
+                return fullurl == url;
             },
 
             process:function (req, res) {
-                process.call(self, req, res);
+                return process.call(self, req, res);
             }
         });
+    },
 
+    path:function (path, process, options) {
+        var self = this;
+
+        if (!path) {
+            throw new Error('path == null');
+        }
+
+        return this.router.push(new Router.PathHandler(path, process, options));
     },
 
     //private
     find:function (req, res) {
 
         var self = this;
-        return _.find(this.router, function (m) {
-            return (m.condition.call(self, req, res));
-        });
+        for (var i = 0; i < this.router.length; ++i) {
+            var m = this.router[i];
+            var proc = m.findProcess(req, res);
+            if (proc) {
+                return proc;
+            }
+        }
 
+        return false;
     },
 
     //private
@@ -272,6 +310,8 @@ Router.prototype = {
 
     execute:function (req, res) {
 
+        var self = this;
+
         //var fullurl = this.getFullUrl(req, res);
         var handler = this.find(req, res);
         if (!handler) {
@@ -281,7 +321,7 @@ Router.prototype = {
             return;
         }
 
-        handler.process.call(this, req, res);
+        handler(req, res);
     },
 
     //protected

@@ -124,6 +124,9 @@ describe('Router', function () {
             };
 
             router.path('/test1/:action?aaa=:param1&bbb=:param2', function(req, res){
+                this.params.action.should.equal('test2');
+                this.params.param1.should.equal('123');
+                this.params.param2.should.equal('456');
 
             });
 
@@ -136,7 +139,27 @@ describe('Router', function () {
             });
         });
 
+        it('should dispatch with type', function () {
 
+            var router = new restrant.Router();
+            router.onNotFound = function(){
+                fail('should not reach');
+            };
+
+            router.path('/test1/:action?aaa=:param1:Integer&bbb=:param2:Float', function(req, res){
+                this.params.action.should.equal('test2');
+                this.params.param1.should.equal(123);
+                this.params.param2.should.equal(456.7);
+            });
+
+            router.execute({
+                url: '/test1/test2',
+                query: {
+                    aaa: '123',
+                    bbb:'456.7'
+                }
+            });
+        });
 
 
     })
