@@ -82,22 +82,22 @@ Router.ParamParser.prototype = {
 
     parse:function (params) {
 
-        console.dir(this.tparts);
-        console.dir(params);
+//        console.dir(this.tparts);
+//        console.dir(params);
 
         for (var i = 0; i < this.tparts.length; ++i) {
 
             var tpart = this.tparts[i];
-            console.dir(tpart);
+//            console.dir(tpart);
 
             var item = tpart.split('=');
             var tkey = item[0];
             var tvalue = item[1];
 
 
-            console.dir(item);
+//            console.dir(item);
             var paramValue = params[tkey];
-            console.dir(paramValue);
+//            console.dir(paramValue);
 
 
             if (!paramValue) return false;
@@ -114,7 +114,7 @@ Router.ParamParser.prototype = {
                     value = paramValue;
                 } else {
                     var nameWithType = tFullName.split(':');
-                    console.dir(nameWithType);
+//                    console.dir(nameWithType);
 
 
                     var name = nameWithType[0];
@@ -262,7 +262,7 @@ Router.prototype = {
                 if (options.host) {
                     if (options.host != req.host) return false;
                 }
-                var fullurl = this.getFullUrl(req, res);
+                var fullurl = self.getFullUrl(req, res);
                 return fullurl == url;
             },
 
@@ -302,8 +302,8 @@ Router.prototype = {
         var schema = 'http';// TODO: 後で調べる
         var fullurl = schema + '://' + req.headers.host + req.url;
 
-        console.log(fullurl);
-        console.log(req.method);
+//        console.log(fullurl);
+//        console.log(req.method);
 
         return fullurl;
     },
@@ -326,6 +326,7 @@ Router.prototype = {
 
     //protected
     onNotFound:function (req, res, fullurl) {
+        //TODO: 404する
         console.log('not found:' + fullurl);
     }
 

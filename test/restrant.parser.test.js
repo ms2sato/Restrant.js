@@ -161,6 +161,26 @@ describe('Router', function () {
             });
         });
 
+        it('should dispatch simple path', function () {
+
+            var router = new restrant.Router();
+            router.onNotFound = function(){
+                fail('should not reach');
+            };
+
+            router.path('/test1/:action', function(req, res){
+                this.params.action.should.equal('test2');
+            });
+
+            router.execute({
+                url: '/test1/test2',
+                query: {
+                    aaa: '123',
+                    bbb:'456.7'
+                }
+            });
+        });
+
 
     })
 })
