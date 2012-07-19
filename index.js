@@ -147,8 +147,9 @@ Router.ParamParser.prototype = {
 
 };
 
-Router.BasicHandler = function (options) {
+Router.BasicHandler = function (router, options) {
     //console.dir(options);
+    this.router = router;
     this.options = options;
 }
 
@@ -168,7 +169,8 @@ Router.BasicHandler.prototype = {
     }
 }
 
-Router.PathHandler = function (path, process, options) {
+Router.PathHandler = function (router, path, process, options) {
+    this.router = router;
     this.options = options || {};
     this.path = path;
     this.process = process;
@@ -249,7 +251,7 @@ Router.prototype = {
      * }
      */
     push:function (options) {
-        this.router.push(new Router.BasicHandler(options));
+        this.router.push(new Router.BasicHandler(this, options));
         return this;
     },
 
@@ -279,7 +281,7 @@ Router.prototype = {
             throw new Error('path == null');
         }
 
-        return this.router.push(new Router.PathHandler(path, process, options));
+        return this.router.push(new Router.PathHandler(this, path, process, options));
     },
 
     //private
@@ -328,6 +330,7 @@ Router.prototype = {
     onNotFound:function (req, res, fullurl) {
         //TODO: 404する
         console.log('not found:' + fullurl);
+        res.send('404 not found', 404);
     }
 
 };
