@@ -19,6 +19,10 @@ Router.PathParser = function (template, options) {
     this.placeholders = options.placeholders || {};
     this.options = options;
 
+
+    console.log(this.tparts);
+    console.log(this.options);
+
 }
 
 Router.PathParser.prototype = {
@@ -176,6 +180,8 @@ Router.PathHandler = function (router, path, process, options) {
     this.process = process;
 }
 
+var httpMethods = {'get' : true, 'post': true, 'head': true, 'put': true, 'option': true};
+
 Router.PathHandler.prototype = {
 
     findProcess:function (req, res) {
@@ -185,6 +191,15 @@ Router.PathHandler.prototype = {
 
         var match;
         var placeholders = {};
+
+        var requestedMethod = req.method? req.method.toLowerCase() : 'get';
+        if (options.method) {
+
+            var wating = options.method.toLowerCase();
+            if (wating != 'all') {
+                if(wating != requestedMethod) return false;
+            }
+        }
 
         //with params
         if (path.indexOf('?') == -1) {
@@ -213,11 +228,17 @@ Router.PathHandler.prototype = {
 
 
                 if (!pathParser.parse(req.url)) return false;
-                if (!paramParser.parse(req.query)) return false;
+
+                if(requestedMethod == 'post' || requestedMethod == 'put'){
+                    if (!paramParser.parse(req.body)) return false;
+                }else{
+                    if (!paramParser.parse(req.query)) return false;
+                }
 
                 return true;
             }
-        };
+        }
+        ;
 
         if (options.host) {
             if (options.host != req.host) return false;
@@ -226,7 +247,7 @@ Router.PathHandler.prototype = {
         var process = this.process;
         var self = this;
         self.params = placeholders;
-        if(match(req, res)){
+        if (match(req, res)) {
             return function () {
                 return process.call(self, req, res);
             }
@@ -283,6 +304,17 @@ Router.prototype = {
 
         return this.router.push(new Router.PathHandler(this, path, process, options));
     },
+
+    on:function (options, handler) {
+        var self = this;
+
+        if (!options.path) {
+            throw new Error('path == null');
+        }
+
+        return this.router.push(new Router.PathHandler(this, options.path, handler, options));
+    },
+
 
     //private
     find:function (req, res) {

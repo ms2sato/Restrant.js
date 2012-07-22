@@ -119,21 +119,25 @@ describe('Router', function () {
         it('should dispatch ', function () {
 
             var router = new restrant.Router();
-            router.onNotFound = function(){
+            router.onNotFound = function () {
                 fail('should not reach');
             };
 
-            router.path('/test1/:action?aaa=:param1&bbb=:param2', function(req, res){
-                this.params.action.should.equal('test2');
-                this.params.param1.should.equal('123');
-                this.params.param2.should.equal('456');
-
-            });
+            router.on(
+                {
+                    path:'/test1/:action?aaa=:param1&bbb=:param2'
+                },
+                function (req, res) {
+                    this.params.action.should.equal('test2');
+                    this.params.param1.should.equal('123');
+                    this.params.param2.should.equal('456');
+                }
+            );
 
             router.execute({
-                url: '/test1/test2',
-                query: {
-                    aaa: '123',
+                url:'/test1/test2',
+                query:{
+                    aaa:'123',
                     bbb:'456'
                 }
             });
@@ -142,45 +146,108 @@ describe('Router', function () {
         it('should dispatch with type', function () {
 
             var router = new restrant.Router();
-            router.onNotFound = function(){
+            router.onNotFound = function () {
                 fail('should not reach');
             };
 
-            router.path('/test1/:action?aaa=:param1:Integer&bbb=:param2:Float', function(req, res){
-                this.params.action.should.equal('test2');
-                this.params.param1.should.equal(123);
-                this.params.param2.should.equal(456.7);
-            });
+            router.on(
+                {
+                    path:'/test1/:action?aaa=:param1:Integer&bbb=:param2:Float'
+                },
+                function (req, res) {
+                    this.params.action.should.equal('test2');
+                    this.params.param1.should.equal(123);
+                    this.params.param2.should.equal(456.7);
+                }
+            );
 
             router.execute({
-                url: '/test1/test2',
-                query: {
-                    aaa: '123',
+                url:'/test1/test2',
+                query:{
+                    aaa:'123',
                     bbb:'456.7'
                 }
             });
         });
 
-        it('should dispatch simple path', function () {
+        it('should not dispatch with method missmatch', function () {
 
             var router = new restrant.Router();
-            router.onNotFound = function(){
+            router.onNotFound = function () {
+                //success
+            };
+
+            router.on(
+                {
+                    path:'/test1/:action?aaa=:param1:Integer&bbb=:param2:Float',
+                    method: 'post'
+                },
+                function (req, res) {
+                    should.fail('should not reach');
+                }
+            );
+
+            router.execute({
+                url:'/test1/test2',
+                method: 'GET', //get is not handled
+                query:{
+                    aaa:'123',
+                    bbb:'456.7'
+                },
+                headers:{
+                    host: 'localhost'
+                }
+            });
+        });
+
+        it('should dispatch with type onPost', function () {
+
+            var router = new restrant.Router();
+            router.onNotFound = function () {
                 fail('should not reach');
             };
 
-            router.path('/test1/:action', function(req, res){
-                this.params.action.should.equal('test2');
-            });
+            router.on(
+                {
+                    path:'/test1/:action?aaa=:param1:Integer&bbb=:param2:Float',
+                    method: 'post'
+                },
+                function (req, res) {
+                    this.params.action.should.equal('test2');
+                    this.params.param1.should.equal(123);
+                    this.params.param2.should.equal(456.7);
+                }
+            );
 
             router.execute({
-                url: '/test1/test2',
-                query: {
-                    aaa: '123',
+                url:'/test1/test2',
+                method: 'POST',
+                body:{
+                    aaa:'123',
                     bbb:'456.7'
                 }
             });
         });
 
+    });
 
-    })
-})
+    it('should dispatch simple path', function () {
+
+        var router = new restrant.Router();
+        router.onNotFound = function () {
+            fail('should not reach');
+        };
+
+        router.on({path:'/test1/:action'}, function (req, res) {
+            this.params.action.should.equal('test2');
+        });
+
+        router.execute({
+            url:'/test1/test2',
+            query:{
+                aaa:'123',
+                bbb:'456.7'
+            }
+        });
+    });
+});
