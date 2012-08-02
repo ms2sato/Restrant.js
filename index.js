@@ -42,7 +42,7 @@ Router.PathParser.prototype = {
         var pparts = path.split('/');
         if (this.tparts.length != pparts.length) return false;
 
-
+       console.log(pparts);
         for (var i = 0; i < this.tparts.length; ++i) {
 
             var tpart = this.tparts[i];
@@ -86,8 +86,8 @@ Router.ParamParser.prototype = {
 
     parse:function (params) {
 
-//        console.dir(this.tparts);
-//        console.dir(params);
+        console.dir(this.tparts);
+        console.dir(params);
 
         for (var i = 0; i < this.tparts.length; ++i) {
 
@@ -186,6 +186,7 @@ Router.PathHandler.prototype = {
 
     findProcess:function (req, res) {
 
+        var self = this;
         var path = this.path;
         var options = this.options;
 
@@ -202,38 +203,53 @@ Router.PathHandler.prototype = {
         }
 
         //with params
-        if (path.indexOf('?') == -1) {
+//        if (path.indexOf('?') == -1) {
+//            console.dir('pathAndQuery without params');
+//
+//            var pathParser = new Router.PathParser(path, {
+//                placeholders:placeholders
+//            });
+//
+//            match = function (req, res) {
+//                return pathParser.parse(req.url);
+//            };
+//
+//        } else
 
-            var pathParser = new Router.PathParser(path, {
-                placeholders:placeholders
-            });
-
+        {
             match = function (req, res) {
-                return pathParser.parse(req.url);
-            };
 
-        } else {
-            var pathAndQuery = path.split('?');
-            match = function (req, res) {
-                var path = pathAndQuery[0];
-                var query = pathAndQuery[1];
+                var path = self.path;
+                var query;
+                if (path.indexOf('?') == -1) {
+                     query = null;
+                }else{
+                    var pathAndQuery = path.split('?');
+                    console.dir('pathAndQuery');
+                    console.dir(pathAndQuery);
+
+                    path = pathAndQuery[0];
+                    query = pathAndQuery[1];
+                }
+
 
                 var pathParser = new Router.PathParser(path, {
                     placeholders:placeholders
                 });
-
-                var paramParser = new Router.ParamParser(query, {
-                    placeholders:placeholders
-                });
-
-
                 if (!pathParser.parse(req.url)) return false;
 
-                if(requestedMethod == 'post' || requestedMethod == 'put'){
-                    if (!paramParser.parse(req.body)) return false;
-                }else{
-                    if (!paramParser.parse(req.query)) return false;
+                if(query){
+                    var paramParser = new Router.ParamParser(query, {
+                        placeholders:placeholders
+                    });
+
+                    if(requestedMethod == 'post' || requestedMethod == 'put'){
+                        if (!paramParser.parse(req.body)) return false;
+                    }else{
+                        if (!paramParser.parse(req.query)) return false;
+                    }
                 }
+
 
                 return true;
             }
