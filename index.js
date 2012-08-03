@@ -35,7 +35,16 @@ Router.PathParser.prototype = {
 
 
     parse:function (path) {
+
+        var atQue = path.indexOf('?');
+        if(atQue != -1){
+            path = path.substr(0, atQue);
+        }
         var pparts = path.split('/');
+        console.log('###');
+        console.dir(pparts);
+        console.dir(this.tparts);
+
         if (this.tparts.length != pparts.length) return false;
 
 
@@ -82,8 +91,8 @@ Router.ParamParser.prototype = {
 
     parse:function (params) {
 
-//        console.dir(this.tparts);
-//        console.dir(params);
+        console.dir(this.tparts);
+        console.dir(params);
 
         for (var i = 0; i < this.tparts.length; ++i) {
 
