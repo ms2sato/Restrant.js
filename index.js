@@ -1,5 +1,14 @@
 var _ = require('underscore');
 
+function debugLog(text){
+    //console.log(text);
+}
+
+function debugDir(obj){
+    //console.dir(obj);
+}
+
+
 var Router = function () {
     this.router = [];
 }
@@ -20,8 +29,8 @@ Router.PathParser = function (template, options) {
     this.options = options;
 
 
-    console.log(this.tparts);
-    console.log(this.options);
+    debugLog(this.tparts);
+    debugLog(this.options);
 
 }
 
@@ -45,13 +54,13 @@ Router.PathParser.prototype = {
             path = path.substr(0, atQue);
         }
         var pparts = path.split('/');
-        console.log('###');
-        console.dir(pparts);
-        console.dir(this.tparts);
+        debugLog('###');
+        debugDir(pparts);
+        debugDir(this.tparts);
 
         if (this.tparts.length != pparts.length) return false;
 
-       console.log(pparts);
+       debugLog(pparts);
         for (var i = 0; i < this.tparts.length; ++i) {
 
             var tpart = this.tparts[i];
@@ -95,22 +104,22 @@ Router.ParamParser.prototype = {
 
     parse:function (params) {
 
-        console.dir(this.tparts);
-        console.dir(params);
+        debugDir(this.tparts);
+        debugDir(params);
 
         for (var i = 0; i < this.tparts.length; ++i) {
 
             var tpart = this.tparts[i];
-//            console.dir(tpart);
+//            debugDir(tpart);
 
             var item = tpart.split('=');
             var tkey = item[0];
             var tvalue = item[1];
 
 
-//            console.dir(item);
+//            debugDir(item);
             var paramValue = params[tkey];
-//            console.dir(paramValue);
+//            debugDir(paramValue);
 
 
             if (!paramValue) return false;
@@ -127,7 +136,7 @@ Router.ParamParser.prototype = {
                     value = paramValue;
                 } else {
                     var nameWithType = tFullName.split(':');
-//                    console.dir(nameWithType);
+//                    debugDir(nameWithType);
 
 
                     var name = nameWithType[0];
@@ -161,7 +170,7 @@ Router.ParamParser.prototype = {
 };
 
 Router.BasicHandler = function (router, options) {
-    //console.dir(options);
+    //debugDir(options);
     this.router = router;
     this.options = options;
 }
@@ -171,7 +180,7 @@ Router.BasicHandler.prototype = {
     findProcess:function (req, res) {
         var self = this;
 
-        //console.dir(this.options);
+        //debugDir(this.options);
 
         if (this.options.condition(req, res)) {
             return function () {
@@ -213,7 +222,7 @@ Router.PathHandler.prototype = {
 
         //with params
 //        if (path.indexOf('?') == -1) {
-//            console.dir('pathAndQuery without params');
+//            debugDir('pathAndQuery without params');
 //
 //            var pathParser = new Router.PathParser(path, {
 //                placeholders:placeholders
@@ -234,8 +243,8 @@ Router.PathHandler.prototype = {
                      query = null;
                 }else{
                     var pathAndQuery = path.split('?');
-                    console.dir('pathAndQuery');
-                    console.dir(pathAndQuery);
+                    debugDir('pathAndQuery');
+                    debugDir(pathAndQuery);
 
                     path = pathAndQuery[0];
                     query = pathAndQuery[1];
@@ -361,8 +370,8 @@ Router.prototype = {
         var schema = 'http';// TODO: 後で調べる
         var fullurl = schema + '://' + req.headers.host + req.url;
 
-//        console.log(fullurl);
-//        console.log(req.method);
+//        debugLog(fullurl);
+//        debugLog(req.method);
 
         return fullurl;
     },
@@ -386,7 +395,7 @@ Router.prototype = {
     //protected
     onNotFound:function (req, res, fullurl) {
         //TODO: 404する
-        console.log('not found:' + fullurl);
+        debugLog('not found:' + fullurl);
         res.send('404 not found', 404);
     }
 
