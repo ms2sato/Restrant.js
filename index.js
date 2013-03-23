@@ -213,7 +213,13 @@ Router.PathHandler.prototype = {
 
 
                 if (!pathParser.parse(req.url)) return false;
-                if (!paramParser.parse(req.query)) return false;
+
+                if(req.query){
+                    if (!paramParser.parse(req.query)) return false;
+                }
+                if(req.body){
+                    if (!paramParser.parse(req.body)) return false;
+                }
 
                 return true;
             }
