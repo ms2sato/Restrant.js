@@ -20,6 +20,12 @@ _.extend(SampleController.prototype, {
         return promise.delay(1).then(function(){
             return {id:'GET'};
         });
+    },
+
+    post: function(){
+        return promise.delay(1).then(function(){
+            return {id:'POST'};
+        });
     }
 
 });

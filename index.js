@@ -18,7 +18,7 @@ Router.separatorOfType = ':';
 
 
 function normalizeParts(parts) {
-    if(_.last(parts) == ''){
+    if (_.last(parts) == '') {
         parts.pop();
     }
     return parts;
@@ -438,15 +438,109 @@ Router.prototype = {
 };
 
 
-function ControllerSourceCodeGenerator() {
+function ClassCodeGenerator() {
 }
 
-_.extend(ControllerSourceCodeGenerator.prototype, {
+_.extend(ClassCodeGenerator.prototype, {
 
-    generate: function (Controller) {
+    createHeader: function(namespace){
+        namespace = namespace || 'RESTRANT';
 
+        var c = '(function(global){\n';
+        c += 'var exports = global.' + namespace + ' = {};\n';
+        c += 'exports._request = function(params){\n';
+        c += '\treturn $.ajax(params);\n'
+        c += '};\n\n';
+        return c;
+    },
+
+    createFooter: function(){
+        var c = '})(this);';
+        return c;
+    },
+
+
+    getClassName: function (metadata) {
+        return CamelSnakeConvertor.toCamel(metadata.controller) + 'Controller';
+    },
+
+    createClass: function (metadata) {
+
+        var controllerName = this.getClassName(metadata);
+        var c = 'exports.' + controllerName + ' = function(){}\n';
+        c += 'exports.' + controllerName + '.prototype._request = function(params){\n';
+        c += '\treturn exports._request(params);\n'
+        c += '};\n\n';
+
+        return c;
+    },
+
+    createFunction: function (metadata) {
+        var actionName = metadata.action;
+        var path = metadata.path;
+        var controllerName = this.getClassName(metadata);
+
+        var quesIndex = path.indexOf('?');
+        if (quesIndex != -1) {
+            path = path.substr(0, quesIndex);
+
+//            var paramsStr = path.substr(quesIndex + 1);
+//            var paramStrs = paramsStr.split('&');
+        }
+
+        path = path.replace(/:([a-zA-Z0-9]+)/, '" + params.$1 + "');
+
+        var method = metadata.method;
+
+        var c = 'exports.' + controllerName + '.prototype.' + actionName + ' =  function(params){\n';
+        c += '\treturn this._request({\n';
+        c += '\t\turl:"' + path + '"\n';
+        c += '\t\t,data: params\n'
+
+        if (method) {
+            c += '\t\t,type: "' + method + '"\n'
+        }
+
+        c += '\t});\n';
+        c += '};\n';
+
+        return c;
     }
+});
 
+
+function ClientSourceCodeGenerator(metadatas) {
+    this.metadatas = metadatas || [];
+}
+
+_.extend(ClientSourceCodeGenerator.prototype, {
+
+    push: function(metadata){
+        this.metadatas.push(metadata);
+    },
+
+    getCode: function(){
+        var ccg = new ClassCodeGenerator();
+
+        var classmetas = _.groupBy(this.metadatas, function(metadata){
+            return metadata.controller;
+        });
+
+
+        var content = ccg.createHeader();
+
+        _.each(classmetas, function (metadatas) {
+
+            content += ccg.createClass(_.first(metadatas));
+            _.each(metadatas, function(metadata){
+                content += ccg.createFunction(metadata);
+            });
+
+        });
+
+        content += ccg.createFooter();
+        return content;
+    }
 });
 
 
@@ -520,6 +614,8 @@ var Restrant = function (router, controllerFactory) {
     this.prefix = Router.prefixOfValue;
     this.controllerLabel = 'controller';
     this.actionLabel = 'action';
+
+    this.metadatas = [];
 }
 
 _.extend(Restrant.prototype, {
@@ -529,6 +625,9 @@ _.extend(Restrant.prototype, {
     },
 
     on: function (options) {
+
+        this.metadatas.push(options);
+
 
         var action = options.action;
         var cname = options.controller;
@@ -564,6 +663,26 @@ _.extend(Restrant.prototype, {
         this.router.execute.apply(this.router, arguments);
     },
 
+
+    stub: function(options){
+
+        path = options.path || 'stub.js';
+        namespace = options.namespace || 'RESTRANT';
+
+        var cscg = new ClientSourceCodeGenerator(_.filter(this.metadatas, function(metadata){
+            return metadata.controller;
+        }));
+
+        var code = cscg.getCode();
+
+        this.router.on({
+            path: path
+        }, function(req, res){
+            res.writeHead(200, {'Content-Type': 'application/javascript'});
+            res.end(code);
+        });
+    },
+
     _returnResult: function (promise, req, res) {
 
         return promise.then(function (data) {
@@ -592,3 +711,5 @@ _.extend(Restrant.prototype, {
 
 exports.Router = Router;
 exports.Restrant = Restrant;
+exports.ClientSourceCodeGenerator = ClientSourceCodeGenerator;
+exports.ClassCodeGenerator = ClassCodeGenerator;

@@ -14,11 +14,19 @@ restrant.publishController('sample', SampleController); //with keyname
 restrant.publishController(SnakeCaseController); // keyname = snake_case
 restrant.on({path:'/api/:controller/:id:Integer', action:'selectById'}); //api/sample/123
 restrant.on({path:'/api/sample/', controller:'sample', action:'get', method:'GET'}); //api/sample/get
+restrant.on({path:'/api/sample/', controller:'sample', action:'post', method:'POST'}); //api/sample/get
 restrant.on({path:'/api/:controller/', action:'test'}); //api/snake_case
+
+restrant.stub({path:'/client.js'}); // for browser
 
 
 //primitive setting to router
 var router = restrant.router;
+
+router.on({path:'/'}, function(req, res){
+    res.render('index', { title:'TEST' });
+});
+
 
 router.push({
 
