@@ -1,10 +1,21 @@
 /*
  * GET home page.
  */
-var restrant = require('../../index.js');
-var Router = restrant.Router;
+var rst = require('../../index.js');
+var Restrant = rst.Restrant;
 
-var router = new Router();
+var SampleController = require('../app/controller/sample_controller').SampleController;
+var SnakeCaseController = require('../app/controller/snake_case_controller').SnakeCaseController;
+
+var restrant = new Restrant();
+restrant.publishController('sample', SampleController); //with keyname
+restrant.publishController(SnakeCaseController); // keyname = snake_case
+restrant.on({path:'/api/:controller/:id:Integer', action:'selectById'}); //api/sample/123
+restrant.on({path:'/api/sample/', action:'get', method:'GET'}); //api/snake_case
+restrant.on({path:'/api/:controller/', action:'test'}); //api/snake_case
+
+var router = restrant.router;
+
 router.push({
 
     condition:function (req, res) {

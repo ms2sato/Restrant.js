@@ -1,11 +1,11 @@
 var _ = require('underscore');
 
-function debugLog(text){
-    //console.log(text);
+function debugLog(text) {
+//    console.log(text);
 }
 
-function debugDir(obj){
-    //console.dir(obj);
+function debugDir(obj) {
+//    console.dir(obj);
 }
 
 
@@ -47,10 +47,10 @@ Router.PathParser.prototype = {
 //    },
 
 
-    parse:function (path) {
+    parse: function (path) {
 
         var atQue = path.indexOf('?');
-        if(atQue != -1){
+        if (atQue != -1) {
             path = path.substr(0, atQue);
         }
         var pparts = path.split('/');
@@ -60,7 +60,7 @@ Router.PathParser.prototype = {
 
         if (this.tparts.length != pparts.length) return false;
 
-       debugLog(pparts);
+        debugLog(pparts);
         for (var i = 0; i < this.tparts.length; ++i) {
 
             var tpart = this.tparts[i];
@@ -70,17 +70,65 @@ Router.PathParser.prototype = {
                 continue;
             } else if (tpart.charAt(0) == ':') {
                 //placeholder
-                this.placeholders[tpart.substr(1)] = ppart;
+                var tFullName = tpart.substr(1);
+                var paramValue = ppart;
+
+                if (ppart.length == 0) return false;
+
+                var ret = applyPlaceholder2Type(tFullName, paramValue);
+                if (!ret) return false;
+
+                this.placeholders[ret.name] = ret.value;
                 continue;
             }
 
             return false;
         }
 
+        debugLog('match: path ' + path + '; tparts' + this.tparts);
+
         return true;
     }
 
 };
+
+function applyPlaceholder2Type(tFullName, paramValue) {
+
+    if (tFullName.indexOf(':') == -1) {
+        debugLog('#### has not type: tFullName ' + tFullName + '; paramValue ' + paramValue);
+        return {
+            name: tFullName,
+            value: paramValue
+        };
+    } else {
+        debugLog('#### has type');
+
+        var nameWithType = tFullName.split(':');
+        debugDir(nameWithType);
+
+
+        var name = nameWithType[0];
+        var type = nameWithType[1];
+        var value;
+
+        if (type == 'Integer') {
+            value = parseInt(paramValue);
+        } else if (type == 'Float') {
+            value = parseFloat(paramValue);
+        }
+
+        if (isNaN(value)) {
+            return false;
+        }
+
+        return {
+            name: name,
+            value: value
+        };
+    }
+
+}
+
 
 Router.ParamParser = function (template, options) {
 
@@ -89,7 +137,7 @@ Router.ParamParser = function (template, options) {
     }
 
     var opt = {
-        placeholders:{}
+        placeholders: {}
     };
 
     options = _.extend(opt, options);
@@ -102,7 +150,7 @@ Router.ParamParser = function (template, options) {
 
 Router.ParamParser.prototype = {
 
-    parse:function (params) {
+    parse: function (params) {
 
         debugDir(this.tparts);
         debugDir(params);
@@ -117,9 +165,9 @@ Router.ParamParser.prototype = {
             var tvalue = item[1];
 
 
-//            debugDir(item);
+            debugDir(item);
             var paramValue = params[tkey];
-//            debugDir(paramValue);
+            debugDir(paramValue);
 
 
             if (!paramValue) return false;
@@ -130,32 +178,10 @@ Router.ParamParser.prototype = {
 
                 // plaeholder
                 var tFullName = tvalue.substr(1);
+                var ret = applyPlaceholder2Type(tFullName, paramValue);
+                if (!ret) return false;
 
-                if (tFullName.indexOf(':') == -1) {
-                    name = tFullName;
-                    value = paramValue;
-                } else {
-                    var nameWithType = tFullName.split(':');
-//                    debugDir(nameWithType);
-
-
-                    var name = nameWithType[0];
-                    var type = nameWithType[1];
-                    var value;
-
-                    if (type == 'Integer') {
-                        value = parseInt(paramValue);
-                    } else if (type == 'Float') {
-                        value = parseFloat(paramValue);
-                    }
-
-                    if (isNaN(value)) {
-                        return false;
-                    }
-
-                }
-
-                this.placeholders[name] = value;
+                this.placeholders[ret.name] = ret.value;
 
             } else if (paramValue.toString() == tvalue) {
                 continue;
@@ -177,7 +203,7 @@ Router.BasicHandler = function (router, options) {
 
 Router.BasicHandler.prototype = {
 
-    findProcess:function (req, res) {
+    findProcess: function (req, res) {
         var self = this;
 
         //debugDir(this.options);
@@ -198,11 +224,11 @@ Router.PathHandler = function (router, path, process, options) {
     this.process = process;
 }
 
-var httpMethods = {'get' : true, 'post': true, 'head': true, 'put': true, 'option': true};
+var httpMethods = {'get': true, 'post': true, 'head': true, 'put': true, 'option': true};
 
 Router.PathHandler.prototype = {
 
-    findProcess:function (req, res) {
+    findProcess: function (req, res) {
 
         var self = this;
         var path = this.path;
@@ -211,12 +237,12 @@ Router.PathHandler.prototype = {
         var match;
         var placeholders = {};
 
-        var requestedMethod = req.method? req.method.toLowerCase() : 'get';
+        var requestedMethod = req.method ? req.method.toLowerCase() : 'get';
         if (options.method) {
 
             var wating = options.method.toLowerCase();
             if (wating != 'all') {
-                if(wating != requestedMethod) return false;
+                if (wating != requestedMethod) return false;
             }
         }
 
@@ -240,8 +266,8 @@ Router.PathHandler.prototype = {
                 var path = self.path;
                 var query;
                 if (path.indexOf('?') == -1) {
-                     query = null;
-                }else{
+                    query = null;
+                } else {
                     var pathAndQuery = path.split('?');
                     debugDir('pathAndQuery');
                     debugDir(pathAndQuery);
@@ -252,18 +278,18 @@ Router.PathHandler.prototype = {
 
 
                 var pathParser = new Router.PathParser(path, {
-                    placeholders:placeholders
+                    placeholders: placeholders
                 });
                 if (!pathParser.parse(req.url)) return false;
 
-                if(query){
+                if (query) {
                     var paramParser = new Router.ParamParser(query, {
-                        placeholders:placeholders
+                        placeholders: placeholders
                     });
 
-                    if(requestedMethod == 'post' || requestedMethod == 'put'){
+                    if (requestedMethod == 'post' || requestedMethod == 'put') {
                         if (!paramParser.parse(req.body)) return false;
-                    }else{
+                    } else {
                         if (!paramParser.parse(req.query)) return false;
                     }
                 }
@@ -304,17 +330,17 @@ Router.prototype = {
      *     }
      * }
      */
-    push:function (options) {
+    push: function (options) {
         this.router.push(new Router.BasicHandler(this, options));
         return this;
     },
 
-    fullpath:function (url, process, options) {
+    fullpath: function (url, process, options) {
         var self = this;
         options = options || {};
 
         return this.push({
-            condition:function (req, res) {
+            condition: function (req, res) {
                 if (options.host) {
                     if (options.host != req.host) return false;
                 }
@@ -322,13 +348,13 @@ Router.prototype = {
                 return fullurl == url;
             },
 
-            process:function (req, res) {
+            process: function (req, res) {
                 return process.call(self, req, res);
             }
         });
     },
 
-    path:function (path, process, options) {
+    path: function (path, process, options) {
         var self = this;
 
         if (!path) {
@@ -338,7 +364,7 @@ Router.prototype = {
         return this.router.push(new Router.PathHandler(this, path, process, options));
     },
 
-    on:function (options, handler) {
+    on: function (options, handler) {
         var self = this;
 
         if (!options.path) {
@@ -350,7 +376,7 @@ Router.prototype = {
 
 
     //private
-    find:function (req, res) {
+    find: function (req, res) {
 
         var self = this;
         for (var i = 0; i < this.router.length; ++i) {
@@ -365,7 +391,7 @@ Router.prototype = {
     },
 
     //private
-    getFullUrl:function (req, res) {
+    getFullUrl: function (req, res) {
         var schema = 'http';// TODO: 後で調べる
         var fullurl = schema + '://' + req.headers.host + req.url;
 
@@ -375,7 +401,7 @@ Router.prototype = {
         return fullurl;
     },
 
-    execute:function (req, res) {
+    execute: function (req, res) {
 
         var self = this;
 
@@ -392,7 +418,7 @@ Router.prototype = {
     },
 
     //protected
-    onNotFound:function (req, res, fullurl) {
+    onNotFound: function (req, res, fullurl) {
         //TODO: 404する
         debugLog('not found:' + fullurl);
         res.send('404 not found', 404);
@@ -400,4 +426,110 @@ Router.prototype = {
 
 };
 
+var CamelSnakeConvertor = function () {
+}
+
+_.extend(CamelSnakeConvertor, {
+
+    toCamel: function (targetStr) {
+        targetStr = targetStr.substr(0, 1).toUpperCase() + targetStr.substr(1);
+
+        return targetStr.replace(/_([a-z])/, function (all, g1) {
+            return g1.toUpperCase().substr(1);
+        });
+    },
+
+    toSnake: function (targetStr) {
+        var convertedStr = targetStr
+            .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+            .replace(/([a-z])([A-Z])/g, '$1_$2');
+        return convertedStr.toLowerCase();
+    }
+
+});
+
+var ControllerFactory = function () {
+    this.controllers = {};
+}
+
+_.extend(ControllerFactory.prototype, {
+
+    push: function (key, Controller) {
+//        console.dir(Controller);
+
+        if (_.isFunction(key)) {
+            Controller = key;
+
+            var typeName = Controller.name;
+            if (!typeName) throw new Error('Undefined Controller.name. for Constructor with name, like "function TypeName() {}" is standard.');
+            key = CamelSnakeConvertor.toSnake(typeName.replace(/Controller$/, ''));
+        }
+
+//        console.log('key: ' + key);
+//        console.log('Controller: ' + Controller);
+
+        this.controllers[key] = Controller;
+    },
+
+    get: function (key, req, res) {
+//        console.log(key);
+
+        var Controller = this.controllers[key];
+        if (!Controller) throw new Error('Controller not found:' + key);
+        return new Controller(req, res);
+    }
+
+});
+
+var Restrant = function (router, controllerFactory) {
+    this.router = router || new Router();
+    this.controllerFactory = controllerFactory || new ControllerFactory();
+}
+
+_.extend(Restrant.prototype, {
+
+    publishController: function () {
+        this.controllerFactory.push.apply(this.controllerFactory, arguments);
+    },
+
+    on: function (options) {
+
+        var action = options.action;
+        var cname = options.controller;
+
+        var self = this;
+        this.router.on(options, function (req, res) {
+
+            cname = cname || this.params.controller; //specified cname is important for security
+            var controller = self.controllerFactory.get(cname, req, res);
+            if (!controller) {
+                throw new Error(cname + ' controller is not publish');
+            }
+
+            var method = action || this.params.action; //specified action is important for security
+            var func = controller[method];
+            if (!func) {
+                throw new Error(cname + '.' + method + ' not found');
+            }
+
+            if (!_.isFunction(func)) {
+                throw new Error(cname + '.' + method + ' is not a function');
+            }
+
+            self._returnResult(func.call(controller, this.params), req, res);
+
+        });
+    },
+
+    _returnResult: function (promise, req, res) {
+
+        return promise.then(function (data) {
+            res.json(data);
+        });
+    }
+
+});
+
+
 exports.Router = Router;
+exports.Restrant = Restrant;
