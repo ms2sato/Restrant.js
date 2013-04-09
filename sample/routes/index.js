@@ -64,9 +64,9 @@ router.path('/path/:action?abc=:aaa', function(req, res){
 exports.index = function (req, res) {
 
 //    console.dir(req);
-    console.log(req.url);
-    console.dir(req.headers);
-    console.log(req.headers.host);
+//    console.log(req.url);
+//    console.dir(req.headers);
+//    console.log(req.headers.host);
 
     restrant.execute(req, res);
 };
