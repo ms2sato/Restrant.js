@@ -17,7 +17,9 @@ _.extend(SampleController.prototype, {
     },
 
     get: function(){
-
+        return promise.delay(1).then(function(){
+            return {id:'GET'};
+        });
     }
 
 });

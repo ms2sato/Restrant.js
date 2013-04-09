@@ -13,6 +13,17 @@ var Router = function () {
     this.router = [];
 }
 
+Router.prefixOfValue = ':';
+Router.separatorOfType = ':';
+
+
+function normalizeParts(parts) {
+    if(_.last(parts) == ''){
+        parts.pop();
+    }
+    return parts;
+}
+
 
 Router.PathParser = function (template, options) {
     if (template === undefined || template === null) {
@@ -24,7 +35,7 @@ Router.PathParser = function (template, options) {
     };
 
     this.template = template;
-    this.tparts = template.split('/');
+    this.tparts = normalizeParts(template.split('/'));
     this.placeholders = options.placeholders || {};
     this.options = options;
 
@@ -53,7 +64,7 @@ Router.PathParser.prototype = {
         if (atQue != -1) {
             path = path.substr(0, atQue);
         }
-        var pparts = path.split('/');
+        var pparts = normalizeParts(path.split('/'));
         debugLog('###');
         debugDir(pparts);
         debugDir(this.tparts);
@@ -68,7 +79,7 @@ Router.PathParser.prototype = {
 
             if (tpart == ppart) {
                 continue;
-            } else if (tpart.charAt(0) == ':') {
+            } else if (tpart.charAt(0) == Router.prefixOfValue) {
                 //placeholder
                 var tFullName = tpart.substr(1);
                 var paramValue = ppart;
@@ -94,7 +105,7 @@ Router.PathParser.prototype = {
 
 function applyPlaceholder2Type(tFullName, paramValue) {
 
-    if (tFullName.indexOf(':') == -1) {
+    if (tFullName.indexOf(Router.separatorOfType) == -1) {
         debugLog('#### has not type: tFullName ' + tFullName + '; paramValue ' + paramValue);
         return {
             name: tFullName,
@@ -103,7 +114,7 @@ function applyPlaceholder2Type(tFullName, paramValue) {
     } else {
         debugLog('#### has type');
 
-        var nameWithType = tFullName.split(':');
+        var nameWithType = tFullName.split(Router.separatorOfType);
         debugDir(nameWithType);
 
 
@@ -172,7 +183,7 @@ Router.ParamParser.prototype = {
 
             if (!paramValue) return false;
 
-            if (tvalue.charAt(0) == ':') {
+            if (tvalue.charAt(0) == Router.prefixOfValue) {
                 var name;
                 var value;
 
@@ -426,6 +437,19 @@ Router.prototype = {
 
 };
 
+
+function ControllerSourceCodeGenerator() {
+}
+
+_.extend(ControllerSourceCodeGenerator.prototype, {
+
+    generate: function (Controller) {
+
+    }
+
+});
+
+
 var CamelSnakeConvertor = function () {
 }
 
@@ -468,11 +492,18 @@ _.extend(ControllerFactory.prototype, {
 //        console.log('key: ' + key);
 //        console.log('Controller: ' + Controller);
 
+        if (!key) {
+            throw new Error('Unexpected key: ' + key);
+        }
         this.controllers[key] = Controller;
     },
 
     get: function (key, req, res) {
 //        console.log(key);
+
+        if (!key) {
+            throw new Error('key is undefined: ' + key);
+        }
 
         var Controller = this.controllers[key];
         if (!Controller) throw new Error('Controller not found:' + key);
@@ -484,6 +515,11 @@ _.extend(ControllerFactory.prototype, {
 var Restrant = function (router, controllerFactory) {
     this.router = router || new Router();
     this.controllerFactory = controllerFactory || new ControllerFactory();
+
+
+    this.prefix = Router.prefixOfValue;
+    this.controllerLabel = 'controller';
+    this.actionLabel = 'action';
 }
 
 _.extend(Restrant.prototype, {
@@ -496,17 +532,20 @@ _.extend(Restrant.prototype, {
 
         var action = options.action;
         var cname = options.controller;
+        if (options.path.indexOf(this._getContollerNameOfPath()) == -1 && !cname) {
+            throw new Error('Controller name not specified. set "' + this._getContollerNameOfPath() + '" in path or options.controller');
+        }
 
         var self = this;
         this.router.on(options, function (req, res) {
 
-            cname = cname || this.params.controller; //specified cname is important for security
+            cname = cname || self._getControllerNameOfParams(this.params); //specified cname is important for security
             var controller = self.controllerFactory.get(cname, req, res);
             if (!controller) {
                 throw new Error(cname + ' controller is not publish');
             }
 
-            var method = action || this.params.action; //specified action is important for security
+            var method = action || self._getActionNameOfParams(this.params); //specified action is important for security
             var func = controller[method];
             if (!func) {
                 throw new Error(cname + '.' + method + ' not found');
@@ -521,11 +560,31 @@ _.extend(Restrant.prototype, {
         });
     },
 
+    execute: function () {
+        this.router.execute.apply(this.router, arguments);
+    },
+
     _returnResult: function (promise, req, res) {
 
         return promise.then(function (data) {
             res.json(data);
         });
+    },
+
+    _getContollerNameOfPath: function () {
+        return this.prefix + this.controllerLabel;
+    },
+
+    _getActionNameOfPath: function () {
+        return this.prefix + this.actionLabel;
+    },
+
+    _getControllerNameOfParams: function (params) {
+        return params[this.controllerLabel];
+    },
+
+    _getActionNameOfParams: function (params) {
+        return params[this.actionLabel];
     }
 
 });

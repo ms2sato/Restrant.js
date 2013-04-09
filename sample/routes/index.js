@@ -7,13 +7,17 @@ var Restrant = rst.Restrant;
 var SampleController = require('../app/controller/sample_controller').SampleController;
 var SnakeCaseController = require('../app/controller/snake_case_controller').SnakeCaseController;
 
+
+// standard
 var restrant = new Restrant();
 restrant.publishController('sample', SampleController); //with keyname
 restrant.publishController(SnakeCaseController); // keyname = snake_case
 restrant.on({path:'/api/:controller/:id:Integer', action:'selectById'}); //api/sample/123
-restrant.on({path:'/api/sample/', action:'get', method:'GET'}); //api/snake_case
+restrant.on({path:'/api/sample/', controller:'sample', action:'get', method:'GET'}); //api/sample/get
 restrant.on({path:'/api/:controller/', action:'test'}); //api/snake_case
 
+
+//primitive setting to router
 var router = restrant.router;
 
 router.push({
@@ -56,5 +60,5 @@ exports.index = function (req, res) {
     console.dir(req.headers);
     console.log(req.headers.host);
 
-    router.execute(req, res);
+    restrant.execute(req, res);
 };
