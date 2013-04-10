@@ -519,7 +519,7 @@ _.extend(ClientSourceCodeGenerator.prototype, {
         this.metadatas.push(metadata);
     },
 
-    getCode: function(){
+    getCode: function(namespace){
         var ccg = new ClassCodeGenerator();
 
         var classmetas = _.groupBy(this.metadatas, function(metadata){
@@ -527,7 +527,7 @@ _.extend(ClientSourceCodeGenerator.prototype, {
         });
 
 
-        var content = ccg.createHeader();
+        var content = ccg.createHeader(namespace);
 
         _.each(classmetas, function (metadatas) {
 
@@ -666,14 +666,14 @@ _.extend(Restrant.prototype, {
 
     stub: function(options){
 
-        path = options.path || 'stub.js';
-        namespace = options.namespace || 'RESTRANT';
+        var path = options.path || 'stub.js';
+        var namespace = options.namespace || 'RESTRANT';
 
         var cscg = new ClientSourceCodeGenerator(_.filter(this.metadatas, function(metadata){
             return metadata.controller;
         }));
 
-        var code = cscg.getCode();
+        var code = cscg.getCode(namespace);
 
         this.router.on({
             path: path

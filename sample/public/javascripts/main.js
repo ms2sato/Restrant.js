@@ -1,6 +1,6 @@
 $(function(){
 
-    var tc = new RESTRANT.SampleController();
+    var tc = new TESTNS.SampleController();
 
     tc.get().then(function(data){
         alert(data.id);

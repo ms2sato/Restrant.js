@@ -17,7 +17,7 @@ restrant.on({path:'/api/sample/', controller:'sample', action:'get', method:'GET
 restrant.on({path:'/api/sample/', controller:'sample', action:'post', method:'POST'}); //api/sample/get
 restrant.on({path:'/api/:controller/', action:'test'}); //api/snake_case
 
-restrant.stub({path:'/client.js'}); // for browser
+restrant.stub({path:'/client.js', namespace:'TESTNS'}); // for browser
 
 
 //primitive setting to router
