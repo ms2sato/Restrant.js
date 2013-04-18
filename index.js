@@ -318,7 +318,7 @@ Router.PathHandler.prototype = {
 
         var process = this.process;
         var self = this;
-        self.params = placeholders;
+        self.params = _.extend(placeholders, options.params);
         if (match(req, res)) {
             return function () {
                 return process.call(self, req, res);
@@ -377,6 +377,11 @@ Router.prototype = {
         return this.router.push(new Router.PathHandler(this, path, process, options));
     },
 
+    /**
+     * @param options.method method 'get', 'post',...
+     * @param handler
+     * @returns {Number}
+     */
     on: function (options, handler) {
         var self = this;
 
@@ -553,10 +558,10 @@ _.extend(CamelSnakeConvertor, {
 
     toCamel: function (targetStr) {
         targetStr = targetStr.substr(0, 1).toUpperCase() + targetStr.substr(1);
-
-        return targetStr.replace(/_([a-z])/, function (all, g1) {
-            return g1.toUpperCase().substr(1);
+        var ret = targetStr.replace(/_([a-z])/g, function (all, g1) {
+            return g1.toUpperCase();
         });
+        return ret;
     },
 
     toSnake: function (targetStr) {
@@ -577,20 +582,23 @@ _.extend(ControllerFactory.prototype, {
     push: function (key, Controller) {
 //        console.dir(Controller);
 
+        var typeName;
+
         if (_.isFunction(key)) {
             Controller = key;
 
-            var typeName = Controller.name;
+            typeName = Controller.name;
             if (!typeName) throw new Error('Undefined Controller.name. for Constructor with name, like "function TypeName() {}" is standard.');
             key = CamelSnakeConvertor.toSnake(typeName.replace(/Controller$/, ''));
         }
 
-//        console.log('key: ' + key);
-//        console.log('Controller: ' + Controller);
+        if (!typeName) throw new Error('Undefined Controller.name. for Constructor with name, like "function TypeName() {}" is standard.');
 
         if (!key) {
             throw new Error('Unexpected key: ' + key);
         }
+
+        console.log('Published: key:' + key + '; controller:' + Controller.name);
         this.controllers[key] = Controller;
     },
 
@@ -643,7 +651,7 @@ _.extend(Restrant.prototype, {
             cname = cname || self._getControllerNameOfParams(this.params); //specified cname is important for security
             var controller = self.controllerFactory.get(cname, req, res);
             if (!controller) {
-                throw new Error(cname + ' controller is not publish');
+                throw new Error(cname + ' controller is not published');
             }
 
             var method = action || self._getActionNameOfParams(this.params); //specified action is important for security
@@ -656,7 +664,16 @@ _.extend(Restrant.prototype, {
                 throw new Error(cname + '.' + method + ' is not a function');
             }
 
-            self._returnResult(func.call(controller, this.params), req, res);
+            try{
+                var promise = func.call(controller, this.params);
+                // if return promise return JSObject
+                if(promise){
+                    this._returnResult(promise, req, res);
+                }
+
+            }catch(ex){
+                console.log(ex.stack);
+            }
 
         });
     },
@@ -668,7 +685,7 @@ _.extend(Restrant.prototype, {
 
     stub: function(options){
 
-        var path = options.path || 'stub.js';
+        var path = options.path || '/stub.js';
         var namespace = options.namespace || 'RESTRANT';
 
         var cscg = new ClientSourceCodeGenerator(_.filter(this.metadatas, function(metadata){
@@ -689,6 +706,9 @@ _.extend(Restrant.prototype, {
 
         return promise.then(function (data) {
             res.json(data);
+        }, function(err){
+            console.log(err);
+            console.log(err.stack);
         });
     },
 
@@ -710,8 +730,39 @@ _.extend(Restrant.prototype, {
 
 });
 
+function BasicController(req, res){
+    this.req = req;
+    this.res = res;
+}
+
+_.extend(BasicController.prototype, {
+
+    responseJson: function(promise){
+        var self = this;
+        return this.guard(promise).then(function(ret){
+            self.res.json(ret)
+        });
+    },
+
+    guard: function(promise){
+        var self = this;
+        return promise.then(function (ret) {
+            return ret;
+        }, function(err){
+            self.handleError.call(self, err);
+        });
+    },
+
+    handleError: function(err){
+        console.log(err.message);
+        console.log(err.stack);
+    }
+
+});
+
 
 exports.Router = Router;
 exports.Restrant = Restrant;
 exports.ClientSourceCodeGenerator = ClientSourceCodeGenerator;
 exports.ClassCodeGenerator = ClassCodeGenerator;
+exports.BasicController = BasicController;
