@@ -590,6 +590,8 @@ _.extend(ControllerFactory.prototype, {
             typeName = Controller.name;
             if (!typeName) throw new Error('Undefined Controller.name. for Constructor with name, like "function TypeName() {}" is standard.');
             key = CamelSnakeConvertor.toSnake(typeName.replace(/Controller$/, ''));
+        }else{
+            typeName = key;
         }
 
         if (!typeName) throw new Error('Undefined Controller.name. for Constructor with name, like "function TypeName() {}" is standard.');
@@ -668,7 +670,7 @@ _.extend(Restrant.prototype, {
                 var promise = func.call(controller, this.params);
                 // if return promise return JSObject
                 if(promise){
-                    this._returnResult(promise, req, res);
+                    self._returnResult(promise, req, res);
                 }
 
             }catch(ex){
