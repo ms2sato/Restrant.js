@@ -24,6 +24,18 @@ describe('PathParser', function () {
             p.placeholders.ph1.should.equal('test2');
         });
 
+        it('should parse query and placeholder with multiple placeholders in path', function () {
+
+            var p = new restrant.Router.PathParser('/api/:test/multiple/:id');
+            p.parse('/api/222222/multiple/111111').should.equal(true);
+            p.placeholders.test.should.equal('222222');
+            p.placeholders.id.should.equal('111111');
+        });
+
+
+
+
+
 
         it('should parse query all match', function () {
 
@@ -250,4 +262,6 @@ describe('Router', function () {
             }
         });
     });
+
+
 });

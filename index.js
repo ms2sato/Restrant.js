@@ -40,7 +40,9 @@ Router.PathParser = function (template, options) {
     this.options = options;
 
 
+    debugLog('### tparts');
     debugLog(this.tparts);
+    debugLog('### options');
     debugLog(this.options);
 
 }
@@ -169,7 +171,7 @@ Router.ParamParser.prototype = {
         for (var i = 0; i < this.tparts.length; ++i) {
 
             var tpart = this.tparts[i];
-//            debugDir(tpart);
+            debugDir(tpart);
 
             var item = tpart.split('=');
             var tkey = item[0];
@@ -488,7 +490,7 @@ _.extend(ClassCodeGenerator.prototype, {
 //            var paramStrs = paramsStr.split('&');
         }
 
-        path = path.replace(/:([a-zA-Z0-9]+)/, '" + params.$1 + "');
+        path = path.replace(/:([a-zA-Z0-9]+)/g, '" + params.$1 + "');
 
         var method = metadata.method;
 

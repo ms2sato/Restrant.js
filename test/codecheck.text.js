@@ -43,4 +43,12 @@ cscg.push({
     path: '/api/sample/:id'
 });
 
+cscg.push({
+    controller: 'test',
+    method: 'POST',
+    action: 'access',
+    path: '/api/sample/:test/id/:id'
+});
+
+
 console.log(cscg.getCode());
