@@ -450,7 +450,7 @@ function ClassCodeGenerator() {
 
 _.extend(ClassCodeGenerator.prototype, {
 
-    createHeader: function(namespace){
+    createHeader: function (namespace) {
         namespace = namespace || 'RESTRANT';
 
         var c = '(function(global){\n';
@@ -461,7 +461,7 @@ _.extend(ClassCodeGenerator.prototype, {
         return c;
     },
 
-    createFooter: function(){
+    createFooter: function () {
         var c = '})(this);';
         return c;
     },
@@ -522,14 +522,14 @@ function ClientSourceCodeGenerator(metadatas) {
 
 _.extend(ClientSourceCodeGenerator.prototype, {
 
-    push: function(metadata){
+    push: function (metadata) {
         this.metadatas.push(metadata);
     },
 
-    getCode: function(namespace){
+    getCode: function (namespace) {
         var ccg = new ClassCodeGenerator();
 
-        var classmetas = _.groupBy(this.metadatas, function(metadata){
+        var classmetas = _.groupBy(this.metadatas, function (metadata) {
             return metadata.controller;
         });
 
@@ -539,7 +539,7 @@ _.extend(ClientSourceCodeGenerator.prototype, {
         _.each(classmetas, function (metadatas) {
 
             content += ccg.createClass(_.first(metadatas));
-            _.each(metadatas, function(metadata){
+            _.each(metadatas, function (metadata) {
                 content += ccg.createFunction(metadata);
             });
 
@@ -582,6 +582,8 @@ _.extend(ControllerFactory.prototype, {
     push: function (key, Controller) {
 //        console.dir(Controller);
 
+        if (!key) throw new Error('Undefined key');
+
         var typeName;
 
         if (_.isFunction(key)) {
@@ -590,7 +592,7 @@ _.extend(ControllerFactory.prototype, {
             typeName = Controller.name;
             if (!typeName) throw new Error('Undefined Controller.name. for Constructor with name, like "function TypeName() {}" is standard.');
             key = CamelSnakeConvertor.toSnake(typeName.replace(/Controller$/, ''));
-        }else{
+        } else {
             typeName = key;
         }
 
@@ -650,31 +652,38 @@ _.extend(Restrant.prototype, {
         var self = this;
         this.router.on(options, function (req, res) {
 
-            cname = cname || self._getControllerNameOfParams(this.params); //specified cname is important for security
-            var controller = self.controllerFactory.get(cname, req, res);
-            if (!controller) {
-                throw new Error(cname + ' controller is not published');
-            }
-
-            var method = action || self._getActionNameOfParams(this.params); //specified action is important for security
-            var func = controller[method];
-            if (!func) {
-                throw new Error(cname + '.' + method + ' not found');
-            }
-
-            if (!_.isFunction(func)) {
-                throw new Error(cname + '.' + method + ' is not a function');
-            }
-
-            try{
-                var promise = func.call(controller, this.params);
-                // if return promise return JSObject
-                if(promise){
-                    self._returnResult(promise, req, res);
+            try {
+                cname = cname || self._getControllerNameOfParams(this.params); //specified cname is important for security
+                var controller = self.controllerFactory.get(cname, req, res);
+                if (!controller) {
+                    throw new Error(cname + ' controller is not published');
                 }
 
-            }catch(ex){
-                console.log(ex.stack);
+                var method = action || self._getActionNameOfParams(this.params); //specified action is important for security
+                var func = controller[method];
+                if (!func) {
+                    throw new Error(cname + '.' + method + ' not found');
+                }
+
+                if (!_.isFunction(func)) {
+                    throw new Error(cname + '.' + method + ' is not a function');
+                }
+
+                try {
+                    var promise = func.call(controller, this.params);
+                    // if return promise return JSObject
+                    if (promise) {
+                        self._returnResult(promise, req, res);
+                    }
+
+                } catch (ex) {
+                    console.log(ex.stack);
+                    if (controller.handleError(ex) === false) {
+                        throw ex;
+                    }
+                }
+            } catch (fatalerr) {
+                self._handleError(fatalerr, req, res);
             }
 
         });
@@ -685,12 +694,12 @@ _.extend(Restrant.prototype, {
     },
 
 
-    stub: function(options){
+    stub: function (options) {
 
         var path = options.path || '/stub.js';
         var namespace = options.namespace || 'RESTRANT';
 
-        var cscg = new ClientSourceCodeGenerator(_.filter(this.metadatas, function(metadata){
+        var cscg = new ClientSourceCodeGenerator(_.filter(this.metadatas, function (metadata) {
             return metadata.controller;
         }));
 
@@ -698,19 +707,24 @@ _.extend(Restrant.prototype, {
 
         this.router.on({
             path: path
-        }, function(req, res){
+        }, function (req, res) {
             res.writeHead(200, {'Content-Type': 'application/javascript'});
             res.end(code);
         });
     },
 
-    _returnResult: function (promise, req, res) {
+    _handleError: function (err, req, res) {
+        console.log(err);
+        console.log(err.stack);
+        throw err;
+    },
 
+    _returnResult: function (promise, req, res) {
+        var self = this;
         return promise.then(function (data) {
             res.json(data);
-        }, function(err){
-            console.log(err);
-            console.log(err.stack);
+        }, function (err) {
+            self._handleError(err, req, res);
         });
     },
 
@@ -732,30 +746,33 @@ _.extend(Restrant.prototype, {
 
 });
 
-function BasicController(req, res){
+function BasicController(req, res) {
+    if (!req) throw new Error('req is undefined');
+    if (!res) throw new Error('res is undefined');
+
     this.req = req;
     this.res = res;
 }
 
 _.extend(BasicController.prototype, {
 
-    responseJson: function(promise){
+    responseJson: function (promise) {
         var self = this;
-        return this.guard(promise).then(function(ret){
-            self.res.json(ret)
+        return this.guard(promise).then(function (ret) {
+            self.res.json(ret);
         });
     },
 
-    guard: function(promise){
+    guard: function (promise) {
         var self = this;
         return promise.then(function (ret) {
             return ret;
-        }, function(err){
+        }, function (err) {
             self.handleError.call(self, err);
         });
     },
 
-    handleError: function(err){
+    handleError: function (err) {
         console.log(err.message);
         console.log(err.stack);
     }
