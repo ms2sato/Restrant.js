@@ -29,13 +29,6 @@ restrant.stub({path:'/client.js', namespace:'TESTNS'}); // for browser
 //primitive setting to router
 var router = restrant.router;
 
-router.on({path:'/'}, function(req, res){
-    res.render('index', { title:'TEST' });
-});
-router.on({path:'/backbone'}, function(req, res){
-    res.render('backbone', { title:'TEST' });
-});
-
 
 router.push({
 
