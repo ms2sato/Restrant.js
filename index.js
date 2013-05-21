@@ -1,12 +1,16 @@
 var _ = require('underscore');
 
 function debugLog(text) {
-//    console.log(text);
+    console.log(text);
 }
 
 function debugDir(obj) {
-//    console.dir(obj);
+    console.dir(obj);
 }
+
+var httpMethods = {'get': true, 'post': true, 'delete': true, 'head': true, 'put': true, 'option': true};
+
+
 
 
 var Router = function () {
@@ -237,8 +241,6 @@ Router.PathHandler = function (router, path, process, options) {
     this.process = process;
 }
 
-var httpMethods = {'get': true, 'post': true, 'head': true, 'put': true, 'option': true};
-
 Router.PathHandler.prototype = {
 
     findProcess: function (req, res) {
@@ -310,7 +312,6 @@ Router.PathHandler.prototype = {
                 return true;
             }
         }
-        ;
 
         if (options.host) {
             if (options.host != req.host) return false;
@@ -450,7 +451,7 @@ function ClassCodeGenerator() {
 
 _.extend(ClassCodeGenerator.prototype, {
 
-    createHeader: function(namespace){
+    createHeader: function (namespace) {
         namespace = namespace || 'RESTRANT';
 
         var c = '(function(global){\n';
@@ -461,7 +462,7 @@ _.extend(ClassCodeGenerator.prototype, {
         return c;
     },
 
-    createFooter: function(){
+    createFooter: function () {
         var c = '})(this);';
         return c;
     },
@@ -522,14 +523,14 @@ function ClientSourceCodeGenerator(metadatas) {
 
 _.extend(ClientSourceCodeGenerator.prototype, {
 
-    push: function(metadata){
+    push: function (metadata) {
         this.metadatas.push(metadata);
     },
 
-    getCode: function(namespace){
+    getCode: function (namespace) {
         var ccg = new ClassCodeGenerator();
 
-        var classmetas = _.groupBy(this.metadatas, function(metadata){
+        var classmetas = _.groupBy(this.metadatas, function (metadata) {
             return metadata.controller;
         });
 
@@ -539,7 +540,7 @@ _.extend(ClientSourceCodeGenerator.prototype, {
         _.each(classmetas, function (metadatas) {
 
             content += ccg.createClass(_.first(metadatas));
-            _.each(metadatas, function(metadata){
+            _.each(metadatas, function (metadata) {
                 content += ccg.createFunction(metadata);
             });
 
@@ -551,13 +552,17 @@ _.extend(ClientSourceCodeGenerator.prototype, {
 });
 
 
+function toUpperTopCharacer(targetStr) {
+    return targetStr.substr(0, 1).toUpperCase() + targetStr.substr(1);
+}
+
 var CamelSnakeConvertor = function () {
 }
 
 _.extend(CamelSnakeConvertor, {
 
     toCamel: function (targetStr) {
-        targetStr = targetStr.substr(0, 1).toUpperCase() + targetStr.substr(1);
+        targetStr = toUpperTopCharacer(targetStr);
         var ret = targetStr.replace(/_([a-z])/g, function (all, g1) {
             return g1.toUpperCase();
         });
@@ -590,7 +595,7 @@ _.extend(ControllerFactory.prototype, {
             typeName = Controller.name;
             if (!typeName) throw new Error('Undefined Controller.name. for Constructor with name, like "function TypeName() {}" is standard.');
             key = CamelSnakeConvertor.toSnake(typeName.replace(/Controller$/, ''));
-        }else{
+        } else {
             typeName = key;
         }
 
@@ -659,23 +664,25 @@ _.extend(Restrant.prototype, {
             var method = action || self._getActionNameOfParams(this.params); //specified action is important for security
             var func = controller[method];
             if (!func) {
-                throw new Error(cname + '.' + method + ' not found');
+                throw new Error(cname + '.' + method + ' not found on ' + options.path + ' for ' + req.path);
+                //return false;
             }
 
             if (!_.isFunction(func)) {
                 throw new Error(cname + '.' + method + ' is not a function');
             }
 
-            try{
+            try {
                 var promise = func.call(controller, this.params);
                 // if return promise return JSObject
-                if(promise){
+                if (promise) {
                     self._returnResult(promise, req, res);
                 }
-
-            }catch(ex){
+            } catch (ex) {
+                // attension for application error
                 console.log(ex.stack);
             }
+            return true;
 
         });
     },
@@ -684,13 +691,36 @@ _.extend(Restrant.prototype, {
         this.router.execute.apply(this.router, arguments);
     },
 
+    restful: function (options) {
 
-    stub: function(options){
+        var self = this;
+        var root = options.path;
+        var controller = options.controller;
+        var prefix = options.prefix || 'do';
+        var placeholder = options.placeholder || 'id';
+
+        _.each(httpMethods, function (method, key) {
+
+            var path = root;
+            if (key !== 'post') {
+                path = root + '/:' + placeholder;
+            }
+
+            var action = prefix + toUpperTopCharacer(key);
+
+            var opt = {path: path, controller: controller, action: action, method: key};
+            debugDir(opt);
+            self.on(opt);
+        });
+
+    },
+
+    stub: function (options) {
 
         var path = options.path || '/stub.js';
         var namespace = options.namespace || 'RESTRANT';
 
-        var cscg = new ClientSourceCodeGenerator(_.filter(this.metadatas, function(metadata){
+        var cscg = new ClientSourceCodeGenerator(_.filter(this.metadatas, function (metadata) {
             return metadata.controller;
         }));
 
@@ -698,7 +728,7 @@ _.extend(Restrant.prototype, {
 
         this.router.on({
             path: path
-        }, function(req, res){
+        }, function (req, res) {
             res.writeHead(200, {'Content-Type': 'application/javascript'});
             res.end(code);
         });
@@ -708,7 +738,7 @@ _.extend(Restrant.prototype, {
 
         return promise.then(function (data) {
             res.json(data);
-        }, function(err){
+        }, function (err) {
             console.log(err);
             console.log(err.stack);
         });
@@ -732,30 +762,30 @@ _.extend(Restrant.prototype, {
 
 });
 
-function BasicController(req, res){
+function BasicController(req, res) {
     this.req = req;
     this.res = res;
 }
 
 _.extend(BasicController.prototype, {
 
-    responseJson: function(promise){
+    responseJson: function (promise) {
         var self = this;
-        return this.guard(promise).then(function(ret){
+        return this.guard(promise).then(function (ret) {
             self.res.json(ret)
         });
     },
 
-    guard: function(promise){
+    guard: function (promise) {
         var self = this;
         return promise.then(function (ret) {
             return ret;
-        }, function(err){
+        }, function (err) {
             self.handleError.call(self, err);
         });
     },
 
-    handleError: function(err){
+    handleError: function (err) {
         console.log(err.message);
         console.log(err.stack);
     }
