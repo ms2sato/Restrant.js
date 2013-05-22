@@ -1,6 +1,5 @@
 var rst = require('./index'),
     _ = require('underscore'),
-    mongoose = require('mongoose'),
     promise = require('node-promise'),
     convertNodeAsyncFunction = promise.convertNodeAsyncFunction;
 

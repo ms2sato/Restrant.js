@@ -4,19 +4,9 @@
 var rst = require('../../index.js');
 var Restrant = rst.Restrant;
 
-var SampleController = require('../app/controller/sample_controller').SampleController;
-var SnakeCaseController = require('../app/controller/snake_case_controller').SnakeCaseController;
-var RestfulController = require('../app/controller/restful_controller').RestfulController;
-var MongooseController = require('../app/controller/mongoose_controller').MongooseController;
-
 
 // standard
 var restrant = new Restrant();
-restrant.publishController('sample', SampleController); //with keyname
-restrant.publishController(SnakeCaseController); // keyname = snake_case
-restrant.publishController(RestfulController);
-restrant.publishController(MongooseController);
-
 restrant.restful({path: '/api/restful', controller:'restful'}); //for restful syntax sugar
 restrant.restful({path: '/api/mongoose', controller: 'mongoose'}); //for mongoose mixed in controller
 
@@ -26,7 +16,21 @@ restrant.on({path:'/api/sample/', controller:'sample', action:'post', method:'PO
 restrant.on({path:'/api/:test/multiple/:id', controller:'sample', action:'withparam', method:'POST'}); //api/sample/get
 restrant.on({path:'/api/:controller/', action:'test'}); //api/snake_case
 
-restrant.stub({path:'/client.js', namespace:'TESTNS'}); // for browser
+(function createStub(){
+
+    var SampleController = require('../app/controller/sample_controller').SampleController;
+    var SnakeCaseController = require('../app/controller/snake_case_controller').SnakeCaseController;
+    var RestfulController = require('../app/controller/restful_controller').RestfulController;
+    var MongooseController = require('../app/controller/mongoose_controller').MongooseController;
+
+    restrant.publishController('sample', SampleController); //with keyname
+    restrant.publishController(SnakeCaseController); // keyname = snake_case
+    restrant.publishController(RestfulController);
+    restrant.publishController(MongooseController);
+
+    restrant.stub({path:'/client.js', namespace:'TESTNS'}); // for browser
+
+})();
 
 
 //primitive setting to router

@@ -65,7 +65,10 @@ function createStory(urlRoot, idAttribute){
         },
 
         function(){
-            var newEntity = createEntity({_id: entity.get('_id')});
+            var opt = {};
+            opt[idAttribute] = entity.get(idAttribute);
+
+            var newEntity = createEntity(opt);
             log('fetch: ', newEntity);
             newEntity.fetch();
         }

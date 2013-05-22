@@ -1,0 +1,29 @@
+{
+  "name": "Restrant.js",
+  "version": "0.0.1",
+  "description": "Framework for presentation on node.js",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "mongoose": "3.6.*",
+    "node-promise": "0.5.*",
+    "underscore": "1.3.*"
+  },
+  "devDependencies": {
+      "should": "0.6.*"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ms2sato/Restrant.js.git"
+  },
+  "keywords": [
+    "node.js"
+  ],
+  "author": "ms2sato",
+  "license": "BSD"
+}

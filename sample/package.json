@@ -5,5 +5,8 @@
   , "dependencies": {
       "express": "2.5.11"
     , "jade": ">= 0.0.1"
+    , "mongoose":"3.6.*"
+    , "node-promise": "0.5.*"
+    , "underscore" : "1.3.*"
   }
 }

@@ -1,11 +1,11 @@
 var _ = require('underscore');
 
 function debugLog(text) {
-    console.log(text);
+    //console.log(text);
 }
 
 function debugDir(obj) {
-    console.dir(obj);
+    //console.dir(obj);
 }
 
 var httpMethods = {'get': true, 'post': true, 'delete': true, 'head': true, 'put': true, 'option': true};
@@ -368,6 +368,7 @@ Router.prototype = {
             throw new Error('path == null');
         }
 
+        console.log(JSON.stringify(options));
         return this.router.push(new Router.PathHandler(this, options.path, handler, options));
     },
 
@@ -541,7 +542,7 @@ _.extend(ClassCodeGenerator.prototype, {
 //            var paramStrs = paramsStr.split('&');
         }
 
-        console.log(path);
+        //console.log(path);
         var placeholderRegex = /:([a-zA-Z0-9]+)/g;
         var placeholderMatch = path.match(placeholderRegex);
         var placeholderKeys = _.map(placeholderMatch || [], function (item) {
@@ -687,6 +688,8 @@ _.extend(Restrant.prototype, {
         var self = this;
         this.router.on(options, function (req, res) {
 
+            console.log(req.method + "\t" + req.path);
+
             res.finished = false;
             function onFinish() {
                 res.finished = true;
@@ -764,7 +767,7 @@ _.extend(Restrant.prototype, {
             var action = prefix + toUpperTopCharacer(key);
 
             var opt = {path: path, controller: controller, action: action, method: key};
-            debugDir(opt);
+            //debugDir(opt);
             self.on(opt);
         });
 
