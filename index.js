@@ -827,6 +827,8 @@ _.extend(Restrant.prototype, {
 
 });
 
+
+////////////////////////////////////////////////////
 function BasicController(req, res) {
     if (!req) throw new Error('req is undefined');
     if (!res) throw new Error('res is undefined');
@@ -859,9 +861,98 @@ _.extend(BasicController.prototype, {
 
 });
 
+////////////////////////////////////////////////////
+/**
+ * do mix-in
+ * @param Module A Class for mixin parent
+ */
+function mixin(target, Module) {
+    if(!target){
+        throw new Error('target not found');
+    }
 
+    if(!Module){
+        throw new Error('Module not found');
+    }
+
+    _.extend(target, Module.prototype);
+    return target;
+}
+
+/**
+ * define mix-in type function
+ * @param Module A Class for mixin parent
+ */
+function mixable(Module) {
+
+    if(!Module){
+        throw new Error('Module not found');
+    }
+
+    if (_.isFunction(Module)) {
+        // for Constructor
+        Module.mixinTo = function (target) {
+
+            if (!target) {
+                throw new Error('target not found');
+            }
+
+            if (!_.isFunction(target)) {
+                throw new Error('target is not constructor');
+            }
+
+            if(Module.requires){
+                _.each(Module.requires, function(req){
+                     if(!target.prototype[req]){
+                         throw new Error('target.prototype.' + req + '() is required');
+                     }
+                });
+            }
+
+            if(Module.optionals){
+                _.each(Module.optionals, function(opt, key){
+                     if(!target.prototype[key]){
+                         target.prototype[key] = opt;
+                     }
+                });
+            }
+
+            if(Module.validateType){
+                var msg = Module.validateType(target);
+                if(msg){
+                    throw new Error(msg);
+                }
+            }
+
+            mixin(target.prototype, Module);
+            return target;
+        }
+    } else {
+        // for Instance but unimplemented
+        throw new Error('Unimplemeted for object instance. to Constructor');
+
+//        Module.mixinTo = function (target) {
+//
+//            if (!target) {
+//                throw new Error('target not found');
+//            }
+//
+//            var msg = Module.validateInstance(target);
+//            if(msg){
+//                throw new Error(msg);
+//            }
+//
+//            mixin(target, Module);
+//            return target;
+//        }
+    }
+}
+
+////////////////////////////////////////////////////
 exports.Router = Router;
 exports.Restrant = Restrant;
 exports.ClientSourceCodeGenerator = ClientSourceCodeGenerator;
 exports.ClassCodeGenerator = ClassCodeGenerator;
 exports.BasicController = BasicController;
+exports.mixin = mixin;
+exports.mixable = mixable;

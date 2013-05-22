@@ -7,6 +7,7 @@ var Restrant = rst.Restrant;
 var SampleController = require('../app/controller/sample_controller').SampleController;
 var SnakeCaseController = require('../app/controller/snake_case_controller').SnakeCaseController;
 var RestfulController = require('../app/controller/restful_controller').RestfulController;
+var MongooseController = require('../app/controller/mongoose_controller').MongooseController;
 
 
 // standard
@@ -14,8 +15,10 @@ var restrant = new Restrant();
 restrant.publishController('sample', SampleController); //with keyname
 restrant.publishController(SnakeCaseController); // keyname = snake_case
 restrant.publishController(RestfulController);
+restrant.publishController(MongooseController);
 
 restrant.restful({path: '/api/restful', controller:'restful'}); //for restful syntax sugar
+restrant.restful({path: '/api/mongoose', controller: 'mongoose'}); //for mongoose mixed in controller
 
 restrant.on({path:'/api/:controller/:id:Integer', action:'selectById'}); //api/sample/123
 restrant.on({path:'/api/sample/', controller:'sample', action:'get', method:'GET'}); //api/sample/get
