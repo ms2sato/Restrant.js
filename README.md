@@ -59,28 +59,28 @@ Restful対応する為のコントローラは下記のようになります。
     _.extend(RestfulController.prototype, {
 
         doGet: function(params){
-            // 好きな処理を入れて下さい。プロミスを返すか、レスポンスを返して下さい。
+            // 好きな処理を入れて下さい。プロミスをreturnするか、この関数内でレスポンスを返して下さい。
             return promise.delay(1).then(function(){
                 return {id:'GET:' + params.id};
             });
         },
 
         doPost: function(params){
-            // 好きな処理を入れて下さい。プロミスを返すか、レスポンスを返して下さい。
+            // 好きな処理を入れて下さい。プロミスをreturnするか、この関数内でレスポンスを返して下さい。
             return promise.delay(1).then(function(){
                 return {id:'POSTED'};
             });
         },
 
         doPut: function(params){
-            // 好きな処理を入れて下さい。プロミスを返すか、レスポンスを返して下さい。
+            // 好きな処理を入れて下さい。プロミスをreturnするか、この関数内でレスポンスを返して下さい。
             return promise.delay(1).then(function(){
                 return {put: 'already put'};
             });
         },
 
         doDelete: function(params){
-            // 好きな処理を入れて下さい。プロミスを返すか、レスポンスを返して下さい。
+            // 好きな処理を入れて下さい。プロミスをreturnするか、この関数内でレスポンスを返して下さい。
             return promise.delay(1).then(function(){
                 return {delete: 'success'};
             });
