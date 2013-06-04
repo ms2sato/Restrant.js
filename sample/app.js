@@ -33,12 +33,13 @@ mongoose.connect(TEST_DB)
 mongoose.connection.on('open',function () {
 
     var EntryEntity = require('./app/model/entry').EntryEntity;
-    EntryEntity.remove({}, function(){
+
+    // remove all entry entity
+    EntryEntity.remove({}, function () {
         app.listen(3000, function () {
             console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
         });
     });
-
 
 }).on('error', function (err) {
         if (err) {
@@ -54,8 +55,13 @@ app.get('/client.js', routes.index);
 app.all('/api/*', routes.index);
 
 app.get('/', function (req, res) {
-    res.render('index', { title: 'TEST' });
+    res.render('index', { title: 'Sample' });
 });
+
+app.get('/stub', function (req, res) {
+    res.render('stub', { title: 'Stub' });
+});
+
 app.get('/backbone', function (req, res) {
     res.render('backbone', { main: 'backbone' });
 });
