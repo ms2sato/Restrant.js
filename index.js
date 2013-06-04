@@ -290,7 +290,7 @@ Router.PathHandler.prototype = {
             }
 
             return true;
-        }
+        };
 
         if (options.host && options.host != req.host) {
             return false;
@@ -470,7 +470,7 @@ function toUpperTopCharacer(targetStr) {
 }
 
 var CamelSnakeConvertor = function () {
-}
+};
 
 _.extend(CamelSnakeConvertor, {
 
@@ -538,13 +538,15 @@ _.extend(ClassCodeGenerator.prototype, {
         if (quesIndex != -1) {
             path = path.substr(0, quesIndex);
 
-//            var paramsStr = path.substr(quesIndex + 1);
-//            var paramStrs = paramsStr.split('&');
+            var paramsStr = path.substr(quesIndex + 1);
+            var paramStrs = paramsStr.split('&');
+
+
         }
 
         //console.log(path);
         var placeholderRegex = /:([a-zA-Z0-9]+)/g;
-        var placeholderMatch = path.match(placeholderRegex);
+        var placeholderMatch = metadata.path.match(placeholderRegex);
         var placeholderKeys = _.map(placeholderMatch || [], function (item) {
             return item.substr(1);
         });
@@ -754,6 +756,7 @@ _.extend(Restrant.prototype, {
         var self = this;
         var root = options.path;
         var controller = options.controller;
+        var params = options.params;
         var prefix = options.prefix || 'do';
         var placeholder = options.placeholder || 'id';
 
@@ -767,6 +770,9 @@ _.extend(Restrant.prototype, {
             var action = prefix + toUpperTopCharacer(key);
 
             var opt = {path: path, controller: controller, action: action, method: key};
+            if (params) {
+                opt.params = params;
+            }
             //debugDir(opt);
             self.on(opt);
         });
@@ -839,12 +845,18 @@ function BasicController(req, res) {
     this.res = res;
 }
 
+BasicController.extend = function () {
+    var args = arguments;
+    Array.prototype.unshift(args, this.prototype);
+    _.extend.apply(_, args);
+};
+
 _.extend(BasicController.prototype, {
 
     responseJson: function (promise) {
         var self = this;
         return this.guard(promise).then(function (ret) {
-            self.res.json(ret)
+            self.res.json(ret);
         });
     },
 
@@ -870,15 +882,20 @@ _.extend(BasicController.prototype, {
  * @param Module A Class for mixin parent
  */
 function mixin(target, Module) {
-    if(!target){
+    if (!target) {
         throw new Error('target not found');
     }
 
-    if(!Module){
+    if (!Module) {
         throw new Error('Module not found');
     }
 
-    _.extend(target, Module.prototype);
+    var $module = Module.prototype;
+    _.extend(target, $module);
+    target.$module = function () {
+        return $module;
+    };
+
     return target;
 }
 
@@ -888,7 +905,7 @@ function mixin(target, Module) {
  */
 function mixable(Module) {
 
-    if(!Module){
+    if (!Module) {
         throw new Error('Module not found');
     }
 
@@ -904,32 +921,33 @@ function mixable(Module) {
                 throw new Error('target is not constructor');
             }
 
-            if(Module.requires){
-                _.each(Module.requires, function(req){
-                     if(!target.prototype[req]){
-                         throw new Error('target.prototype.' + req + '() is required');
-                     }
+            if (Module.requires) {
+                _.each(Module.requires, function (req) {
+                    if (!target.prototype[req]) {
+                        throw new Error('target.prototype.' + req + '() is required');
+                    }
                 });
             }
 
-            if(Module.optionals){
-                _.each(Module.optionals, function(opt, key){
-                     if(!target.prototype[key]){
-                         target.prototype[key] = opt;
-                     }
+            if (Module.optionals) {
+                _.each(Module.optionals, function (opt, key) {
+                    if (!target.prototype[key]) {
+                        target.prototype[key] = opt;
+                    }
                 });
             }
 
-            if(Module.validateType){
+            if (Module.validateType) {
                 var msg = Module.validateType(target);
-                if(msg){
+                if (msg) {
                     throw new Error(msg);
                 }
             }
 
             mixin(target.prototype, Module);
             return target;
-        }
+        };
+
     } else {
         // for Instance but unimplemented
         throw new Error('Unimplemeted for object instance. to Constructor');
