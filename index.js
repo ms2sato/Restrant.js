@@ -495,6 +495,7 @@ _.extend(CamelSnakeConvertor, {
 function ClassCodeGenerator() {
 }
 
+var placeholderRegex = /:([a-zA-Z0-9]+)/g;
 _.extend(ClassCodeGenerator.prototype, {
 
     createHeader: function (namespace) {
@@ -529,31 +530,30 @@ _.extend(ClassCodeGenerator.prototype, {
         return c;
     },
 
+    _getPlaceholderKeys: function (text) {
+        var placeholderMatch = text.match(placeholderRegex);
+        return _.map(placeholderMatch || [], function (item) {
+            return item.substr(1);
+        });
+    },
+
     createFunction: function (metadata) {
         var actionName = metadata.action;
         var path = metadata.path;
         var controllerName = this.getClassName(metadata);
 
-        var quesIndex = path.indexOf('?');
-        if (quesIndex != -1) {
-            path = path.substr(0, quesIndex);
-
-            var paramsStr = path.substr(quesIndex + 1);
-            var paramStrs = paramsStr.split('&');
-
-
-        }
-
         //console.log(path);
-        var placeholderRegex = /:([a-zA-Z0-9]+)/g;
-        var placeholderMatch = metadata.path.match(placeholderRegex);
-        var placeholderKeys = _.map(placeholderMatch || [], function (item) {
-            return item.substr(1);
-        });
-        path = path.replace(placeholderRegex, '" + params.$1 + "');
-
+        var placeholderKeys = this._getPlaceholderKeys(path);
+        var url = path.replace(placeholderRegex, '" + params.$1 + "');
 
         var method = metadata.method;
+        var quesIndex = path.indexOf('?');
+        var pathWithoutQuery;
+        if (quesIndex != -1) {
+            pathWithoutQuery = path.substr(0, quesIndex);
+        } else {
+            pathWithoutQuery = path;
+        }
 
         var c = 'exports.' + controllerName + '.prototype.' + actionName + ' =  function(params){\n';
 
@@ -561,8 +561,20 @@ _.extend(ClassCodeGenerator.prototype, {
             c += '\tif(params.' + key + ' === undefined) { throw new Error("' + key + ' is undefined "); }\n';
         });
 
+        var urlStr = '"' + url + '"';
+        urlStr = urlStr.replace(/ \+ \"\"$/, '');
+
+        c += '\t// ' + path + '\n';
+        c += '\tvar url = ' + urlStr + ';\n';
+
+        var placeholderKeysOnPath = this._getPlaceholderKeys(pathWithoutQuery);
+        _.each(placeholderKeysOnPath, function (key) {
+            c += '\tdelete params.' + key + ';\n';
+        });
+
+
         c += '\treturn this._request({\n';
-        c += '\t\turl:"' + path + '"\n';
+        c += '\t\turl: url\n';
         c += '\t\t,data: params\n';
 
         if (method) {
