@@ -7,10 +7,9 @@ var rst = require('./index'),
 ////////////////////////////////////////////////////
 /**
  * mix-in Module for Mongoose RestfulController
- * @constructor
  */
-function MongooseModule() {
-}
+var MongooseModule = {
+};
 
 /**
  * required method list
@@ -48,7 +47,7 @@ MongooseModule.optionals = {
 
 };
 
-_.extend(MongooseModule.prototype, {
+_.extend(MongooseModule, {
 
     doGet: function (params) {
         var self = this;
@@ -194,21 +193,7 @@ function createMongooseControllerType(params) {
         throw new Error('params.interceptor.getEntityType required');
     }
 
-
-    var Super = params.superType;
-
-    var Controller = function (req, res) {
-        Super.call(this, req, res);
-    };
-
-    u.inherits(Controller, Super);
-
-    _.extend(Controller.prototype, params.interceptor);
-
-    // publish for restrant;
-    Controller.publish = function (restrant) {
-        restrant.publishController(params.name, Controller);
-    };
+    var Controller = rst.extend(params.superType, params.interceptor, params);
 
     // mixin MongooseModule
     var MM = MongooseModule;

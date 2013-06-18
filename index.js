@@ -1,4 +1,5 @@
-var _ = require('underscore');
+var _ = require('underscore'),
+    u = require('util');
 
 function debugLog(text) {
     //console.log(text);
@@ -644,6 +645,14 @@ _.extend(ControllerFactory.prototype, {
             key = CamelSnakeConvertor.toSnake(typeName.replace(/Controller$/, ''));
         } else {
             typeName = key;
+
+            if (!Controller) {
+                throw new Error('Controller not found : ' + key);
+            }
+
+            if (!_.isFunction(Controller)) {
+                throw new Error('Controller is not constuctor');
+            }
         }
 
         if (!typeName) throw new Error('Undefined Controller.name. for Constructor with name, like "function TypeName() {}" is standard.');
@@ -651,6 +660,7 @@ _.extend(ControllerFactory.prototype, {
         if (!key) {
             throw new Error('Unexpected key: ' + key);
         }
+
 
         console.log('Published: key:' + key + '; controller:' + Controller.name);
         this.controllers[key] = Controller;
@@ -848,6 +858,43 @@ _.extend(Restrant.prototype, {
 
 });
 
+/**
+ * object oriented extend
+ * @param SuperType super type
+ * @param methods methods object
+ * @param params
+ * @returns {Function} NewType
+ */
+function extend(SuperType, methods, params) {
+    params = _.defaults(params, {
+    });
+
+    // if function, as constructor only.
+    if(_.isFunction(methods)){
+        methods = {
+            initialize: methods
+        };
+    }
+
+    var Type = function (req, res) {
+        SuperType.call(this, req, res);
+
+        if (methods.initialize) {
+            methods.initialize.call(this);
+        }
+    };
+
+    u.inherits(Type, SuperType);
+
+    _.extend(Type.prototype, methods);
+
+    Type.extend = function (methods, params) {
+        return extend(Type, methods, params);
+    };
+
+    return Type;
+}
+
 
 ////////////////////////////////////////////////////
 function BasicController(req, res) {
@@ -857,10 +904,8 @@ function BasicController(req, res) {
     this.res = res;
 }
 
-BasicController.extend = function () {
-    var args = arguments;
-    Array.prototype.unshift(args, this.prototype);
-    _.extend.apply(_, args);
+BasicController.extend = function (methods, params) {
+    return extend(this, methods, params);
 };
 
 _.extend(BasicController.prototype, {
@@ -902,7 +947,7 @@ function mixin(target, Module) {
         throw new Error('Module not found');
     }
 
-    var $module = Module.prototype;
+    var $module = Module;
     _.extend(target, $module);
     target.$module = function () {
         return $module;
@@ -913,7 +958,7 @@ function mixin(target, Module) {
 
 /**
  * define mix-in type function
- * @param Module A Class for mixin parent
+ * @param Module A Module for mixin parent
  */
 function mixable(Module) {
 
@@ -922,7 +967,12 @@ function mixable(Module) {
     }
 
     if (_.isFunction(Module)) {
-        // for Constructor
+        throw new Error('Module should not be function');
+    }
+
+
+    if (_.isObject(Module)) {
+
         Module.mixinTo = function (target) {
 
             if (!target) {
@@ -961,23 +1011,7 @@ function mixable(Module) {
         };
 
     } else {
-        // for Instance but unimplemented
-        throw new Error('Unimplemeted for object instance. to Constructor');
-
-//        Module.mixinTo = function (target) {
-//
-//            if (!target) {
-//                throw new Error('target not found');
-//            }
-//
-//            var msg = Module.validateInstance(target);
-//            if(msg){
-//                throw new Error(msg);
-//            }
-//
-//            mixin(target, Module);
-//            return target;
-//        }
+        throw new Error('Unimplemeted for this type');
     }
 }
 
@@ -987,5 +1021,6 @@ exports.Restrant = Restrant;
 exports.ClientSourceCodeGenerator = ClientSourceCodeGenerator;
 exports.ClassCodeGenerator = ClassCodeGenerator;
 exports.BasicController = BasicController;
+exports.extend = extend;
 exports.mixin = mixin;
 exports.mixable = mixable;
