@@ -298,7 +298,8 @@ Router.PathHandler.prototype = {
         }
 
         var process = this.process;
-        self.params = _.extend(placeholders, options.params);
+        var params = (_.isFunction(options.params)) ? options.params(req, res) : options.params;
+        self.params = _.extend(placeholders, params);
         if (match(req, res)) {
             return function () {
                 return process.call(self, req, res);
@@ -545,16 +546,23 @@ _.extend(ClassCodeGenerator.prototype, {
 
         //console.log(path);
         var placeholderKeys = this._getPlaceholderKeys(path);
-        var url = path.replace(placeholderRegex, '" + params.$1 + "');
+        var url = path;
 
         var method = metadata.method;
         var quesIndex = path.indexOf('?');
         var pathWithoutQuery;
         if (quesIndex != -1) {
             pathWithoutQuery = path.substr(0, quesIndex);
+
+            if (method.toLowerCase() != 'get') {
+                url = pathWithoutQuery;
+            }
+
         } else {
             pathWithoutQuery = path;
         }
+
+        url = url.replace(placeholderRegex, '" + params.$1 + "');
 
         var c = 'exports.' + controllerName + '.prototype.' + actionName + ' =  function(params){\n';
 
@@ -713,6 +721,7 @@ _.extend(Restrant.prototype, {
         this.router.on(options, function (req, res) {
 
             console.log(req.method + "\t" + req.path);
+            //console.log('body: ', req.body, '; query: ', req.query);
 
             res.finished = false;
             function onFinish() {
@@ -739,10 +748,18 @@ _.extend(Restrant.prototype, {
                 }
 
                 try {
-                    var promise = func.call(controller, this.params);
-                    // if return promise return JSObject
-                    if (promise) {
-                        self._returnResult(promise, req, res);
+                    var retobj = func.call(controller, this.params);
+                    if (retobj) {
+
+                        if (retobj.then && _.isFunction(retobj.then)) {
+                            // as returned promise
+                            self._returnResult(retobj, req, res);
+                            return;
+                        } else {
+                            // as returned object
+                            res.json(retobj);
+                        }
+
                         return;
                     }
 
@@ -836,6 +853,9 @@ _.extend(Restrant.prototype, {
             }
 
         }, function (err) {
+            if (!err) {
+                throw new Error('err is undefined');
+            }
             self._handleError(err, req, res);
         });
     },
@@ -870,7 +890,7 @@ function extend(SuperType, methods, params) {
     });
 
     // if function, as constructor only.
-    if(_.isFunction(methods)){
+    if (_.isFunction(methods)) {
         methods = {
             initialize: methods
         };
