@@ -1,5 +1,6 @@
 var _ = require('underscore'),
-    u = require('util');
+    u = require('util'),
+    fs = require('fs');
 
 function debugLog(text) {
     //console.log(text);
@@ -508,6 +509,11 @@ _.extend(ClassCodeGenerator.prototype, {
         c += 'exports._request = function(params){\n';
         c += '\treturn $.ajax(params);\n';
         c += '};\n\n';
+
+        c += 'exports._copy = function(params){\n';
+        c += '\treturn $.extend(true, {}, params);\n';
+        c += '};\n\n';
+
         return c;
     },
 
@@ -527,6 +533,9 @@ _.extend(ClassCodeGenerator.prototype, {
         var c = 'exports.' + controllerName + ' = function(){}\n';
         c += 'exports.' + controllerName + '.prototype._request = function(params){\n';
         c += '\treturn exports._request(params);\n';
+        c += '};\n\n';
+        c += 'exports.' + controllerName + '.prototype._copy = function(params){\n';
+        c += '\treturn exports._copy(params);\n';
         c += '};\n\n';
 
         return c;
@@ -562,9 +571,16 @@ _.extend(ClassCodeGenerator.prototype, {
             pathWithoutQuery = path;
         }
 
-        url = url.replace(placeholderRegex, '" + params.$1 + "');
 
-        var c = 'exports.' + controllerName + '.prototype.' + actionName + ' =  function(params){\n';
+        var usedParams = [];
+        url = url.replace(placeholderRegex, function(str, p1){
+            usedParams.push(p1);
+            return '" + params.' + p1 + ' + "';
+        });
+
+        var c = 'exports.' + controllerName + '.prototype.' + actionName + ' =  function(sparams){\n';
+
+        c+= '\tvar params = this._copy(sparams);\n\n';
 
         _.each(placeholderKeys, function (key) {
             c += '\tif(params.' + key + ' === undefined) { throw new Error("' + key + ' is undefined "); }\n';
@@ -576,8 +592,7 @@ _.extend(ClassCodeGenerator.prototype, {
         c += '\t// ' + path + '\n';
         c += '\tvar url = ' + urlStr + ';\n';
 
-        var placeholderKeysOnPath = this._getPlaceholderKeys(pathWithoutQuery);
-        _.each(placeholderKeysOnPath, function (key) {
+        _.each(usedParams, function (key) {
             c += '\tdelete params.' + key + ';\n';
         });
 
@@ -820,22 +835,39 @@ _.extend(Restrant.prototype, {
 
     stub: function (options) {
 
-        var path = options.path || '/stub.js';
+        console.log('# generate stub ...');
         var namespace = options.namespace || 'RESTRANT';
 
         var cscg = new ClientSourceCodeGenerator(_.filter(this.metadatas, function (metadata) {
             return metadata.controller;
         }));
-
         var code = cscg.getCode(namespace);
         debugLog(code);
 
-        this.router.on({
-            path: path
-        }, function (req, res) {
-            res.writeHead(200, {'Content-Type': 'application/javascript'});
-            res.end(code);
-        });
+        if (options.file) {
+
+//            if (options.watch) {
+//                console.log('# watch to ' + options.watch);
+//                var wstat = fs.statSync(options.watch);
+//                var sstat = fs.statSync(options.file);
+//                if (wstat.mtime == sstat.mtime) {
+//                    console.log('# file not touched');
+//                }
+//            }
+
+            console.log('# outoput stub to ' + options.file);
+            var write = fs.createWriteStream(options.file);
+            write.end(code);
+        } else {
+            var path = options.path || '/stub.js';
+            this.router.on({
+                path: path
+            }, function (req, res) {
+                res.writeHead(200, {'Content-Type': 'application/javascript'});
+                res.end(code);
+            });
+        }
+
     },
 
     _handleError: function (err, req, res) {
