@@ -768,7 +768,7 @@ _.extend(Restrant.prototype, {
 
                         if (retobj.then && _.isFunction(retobj.then)) {
                             // as returned promise
-                            self._returnResult(retobj, req, res);
+                            self._returnResult(controller, retobj, req, res);
                             return;
                         } else {
                             // as returned object
@@ -876,7 +876,7 @@ _.extend(Restrant.prototype, {
         throw err;
     },
 
-    _returnResult: function (promise, req, res) {
+    _returnResult: function (controller, promise, req, res) {
         var self = this;
         return promise.then(function (data) {
 
@@ -888,7 +888,10 @@ _.extend(Restrant.prototype, {
             if (!err) {
                 throw new Error('err is undefined');
             }
-            self._handleError(err, req, res);
+
+            if (controller.handleError(err) === false) {
+                self._handleError(err, req, res);
+            }
         });
     },
 
