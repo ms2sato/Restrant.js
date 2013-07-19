@@ -27,7 +27,7 @@ _.extend(RestfulController.prototype, {
         console.log('####### put body');
         console.log(this.req.body);
         return promise.delay(1).then(function(){
-            return {put: 'already put'};
+            return {put: 'PUT'};
         });
     },
 
