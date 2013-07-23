@@ -145,10 +145,23 @@ Router.ParamParser.prototype = {
         debugDir(this.tparts);
         debugDir(params);
 
+        var self = this;
         for (i = 0; i < this.tparts.length; ++i) {
 
             var tpart = this.tparts[i];
             debugDir(tpart);
+
+            if (tpart.indexOf('=') == -1) {
+                //?:body style
+                if (this.tparts.length != 1) {
+                    throw new Error('Token Error:' + this.template);
+                }
+
+                _.each(params, function (value, key) {
+                    self.placeholders[key] = value;
+                });
+                return true;
+            }
 
             var item = tpart.split('=');
             var tkey = item[0];
@@ -273,23 +286,30 @@ Router.PathHandler.prototype = {
             var pathParser = new Router.PathParser(path, {
                 placeholders: placeholders
             });
-            if (!pathParser.parse(req.url)) return false;
+            if (!pathParser.parse(req.url)) {
+                return false;
+            }
 
             if (query) {
-                var paramParser = new Router.ParamParser(query, {
-                    placeholders: placeholders
-                });
+                try {
+                    var paramParser = new Router.ParamParser(query, {
+                        placeholders: placeholders
+                    });
 
-                if (requestedMethod == 'post' || requestedMethod == 'put') {
-                    if (!paramParser.parse(req.body)) {
-                        return false;
+                    if (requestedMethod == 'post' || requestedMethod == 'put') {
+                        if (!paramParser.parse(req.body)) {
+                            return false;
+                        }
+                    } else {
+                        if (!paramParser.parse(req.query)) {
+                            return false;
+                        }
                     }
-                } else {
-                    if (!paramParser.parse(req.query)) {
-                        return false;
-                    }
+                } catch (ex) {
+                    throw new Error('ParseError: ' + ex.message + ' on ' + requestedMethod + ' ' + self.path);
                 }
             }
+
 
             return true;
         };
@@ -498,7 +518,7 @@ _.extend(CamelSnakeConvertor, {
 function ClassCodeGenerator() {
 }
 
-var placeholderRegex = /:([a-zA-Z0-9]+)/g;
+var placeholderRegex = /:([a-zA-Z0-9_\-\%\$]+)/g;
 _.extend(ClassCodeGenerator.prototype, {
 
     createHeader: function (namespace) {
@@ -563,6 +583,15 @@ _.extend(ClassCodeGenerator.prototype, {
         if (quesIndex != -1) {
             pathWithoutQuery = path.substr(0, quesIndex);
 
+            var query = path.substr(quesIndex + 1);
+            debugLog('######### query:' + query);
+            if(query.indexOf('=') == -1){
+                // ?:body style
+                delete placeholderKeys[placeholderKeys.indexOf(query.substr(1))];
+            }
+            debugDir('plaeholderKeys|' + placeholderKeys);
+
+
             if (method.toLowerCase() != 'get') {
                 url = pathWithoutQuery;
             }
@@ -573,14 +602,14 @@ _.extend(ClassCodeGenerator.prototype, {
 
 
         var usedParams = [];
-        url = url.replace(placeholderRegex, function(str, p1){
+        url = url.replace(placeholderRegex, function (str, p1) {
             usedParams.push(p1);
             return '" + params.' + p1 + ' + "';
         });
 
         var c = 'exports.' + controllerName + '.prototype.' + actionName + ' =  function(sparams){\n';
 
-        c+= '\tvar params = this._copy(sparams);\n\n';
+        c += '\tvar params = this._copy(sparams);\n\n';
 
         _.each(placeholderKeys, function (key) {
             c += '\tif(params.' + key + ' === undefined) { throw new Error("' + key + ' is undefined "); }\n';
@@ -819,6 +848,10 @@ _.extend(Restrant.prototype, {
             var path = root;
             if (key !== 'post') {
                 path = root + '/:' + placeholder;
+            }
+
+            if (key == 'post' || key == 'put') {
+                path += '?:body';
             }
 
             var action = prefix + toUpperTopCharacer(key);
