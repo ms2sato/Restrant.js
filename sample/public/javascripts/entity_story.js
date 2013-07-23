@@ -18,7 +18,7 @@ function createStory(urlRoot, idAttribute){
         var entity = new Entity(options);
         entity.set('myname', 'TestName');
         entity.on('sync', function (attr) {
-            log('sync', this);
+            log('sync event', this);
 
             if(scene == 2 || scene == 3 || scene == 4 || scene == 5){
                 next();
@@ -26,16 +26,21 @@ function createStory(urlRoot, idAttribute){
         });
 
         entity.on('change', function () {
-            log('change', this);
+            log('change event', this);
 
             if(scene == 1){
                 next();
             }
         });
 
-        entity.on('error', function(err){
+        entity.on('remove', function () {
+            log('remove event', this);
+        });
+
+        entity.on('error event', function(err){
             log('error', err);
         });
+
         return entity;
     }
 
@@ -50,16 +55,19 @@ function createStory(urlRoot, idAttribute){
         },
 
         function(){
-            log('edit property')
+            log('edit property and save')
             entity.save({myname: 'MyNewName'});
         },
 
         function(){
             log('delete', entity);
-            entity.destroy();
+            entity.destroy({success: function(model, response) {
+                log('delete success handler');
+            }});
         },
 
         function(){
+            log('create');
             entity = createEntity();
             entity.save();
         },

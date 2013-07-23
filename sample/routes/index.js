@@ -24,7 +24,7 @@ restrant.restful({path: '/api/mongoose', controller: 'mongoose'}); //for mongoos
 restrant.on({path:'/api/:controller/:id:Integer', action:'selectById'}); //api/sample/123
 restrant.on({path:'/api/sample/', controller:'sample', action:'get', method:'GET'}); //api/sample/get
 restrant.on({path:'/api/sample/', controller:'sample', action:'post', method:'POST'}); //api/sample/get
-restrant.on({path:'/api/:test/multiple/:id', controller:'sample', action:'withparam', method:'POST'}); //api/sample/get
+restrant.on({path:'/api/:test/multiple/:id?name=:name&age=:age', controller:'sample', action:'withparam', method:'POST'}); //api/sample/get
 restrant.on({path:'/api/:controller/', action:'test'}); //api/snake_case
 
 // create stub

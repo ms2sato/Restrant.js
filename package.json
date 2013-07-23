@@ -1,5 +1,5 @@
 {
-  "name": "Restrant.js",
+  "name": "restrant",
   "version": "0.0.1",
   "description": "Framework for presentation on node.js",
   "main": "index.js",
@@ -25,5 +25,5 @@
     "node.js"
   ],
   "author": "ms2sato",
-  "license": "BSD"
+  "license": "MIT"
 }
