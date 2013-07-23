@@ -60,7 +60,7 @@ _.extend(MongooseModule, {
 
     doPost: function (params) {
 
-        var values = this.req.body;
+        var values = params;
         console.dir(values);
         values = this.arrangePostAttr(values, params);
         if (!values) {
@@ -75,14 +75,15 @@ _.extend(MongooseModule, {
     doPut: function (params) {
 
         var idlabel = this.getIdLabel();
-        var values = _.clone(this.req.body);
-        console.dir(values);
-        delete values[idlabel];
+        var values = _.clone(params);
 
         var self = this;
         var _id = params.id;
         var opt = {};
         opt[idlabel] = _id;
+
+        console.dir(values);
+        delete values[idlabel];
 
         values = this.arrangePutAttr(values, params);
         if (!values) {
