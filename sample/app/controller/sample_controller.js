@@ -22,7 +22,8 @@ _.extend(SampleController.prototype, {
         });
     },
 
-    post: function(){
+    post: function(params){
+        console.log("post:", params);
         return promise.delay(1).then(function(){
             return {id:'POST'};
         });

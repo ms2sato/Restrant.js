@@ -4,15 +4,18 @@ $(function(){
 
     tc.get().then(function(data){
         alert(data.id);
-    }, function(xhr){
-        console.dir(xhr);
+    }, function(res){
+        console.dir(res);
         alert('Error');
     });
 
-    tc.post().then(function(data){
+    tc.post({
+        test: 123,
+        name: 'abc'
+    }).then(function(data){
         alert(data.id);
-    }, function(xhr){
-        console.dir(xhr);
+    }, function(res){
+        console.dir(res);
         alert('Error');
     });
 

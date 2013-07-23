@@ -18,11 +18,13 @@ restrant.publishController(SnakeCaseController); // keyname = snake_case
 restrant.publishController(RestfulController);
 restrant.publishController(MongooseController);
 
+// draft
 restrant.restful({path: '/api/restful', controller:'restful'}); //for restful syntax sugar
 restrant.restful({path: '/api/mongoose', controller: 'mongoose'}); //for mongoose mixed in controller
 
 restrant.on({path:'/api/:controller/:id:Integer', action:'selectById'}); //api/sample/123
 restrant.on({path:'/api/sample/', controller:'sample', action:'get', method:'GET'}); //api/sample/get
+restrant.on({path:'/api/sample?name=:name&test=:test', controller:'sample', action:'post', method:'POST'}); //api/sample/get
 restrant.on({path:'/api/sample/', controller:'sample', action:'post', method:'POST'}); //api/sample/get
 restrant.on({path:'/api/:test/multiple/:id?name=:name&age=:age', controller:'sample', action:'withparam', method:'POST'}); //api/sample/get
 restrant.on({path:'/api/:controller/', action:'test'}); //api/snake_case
